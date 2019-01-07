@@ -125,7 +125,6 @@ class TPlot(object):
         # add x-ticks
         # -----------------------------
         xticks = self.get_xticks()
-        print(xticks)
         fmt = '%%-%d.2e'%(xticks[1][0]-xticks[0][0])
 
         labels = ''
