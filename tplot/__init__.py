@@ -71,11 +71,16 @@ class TPlot(object):
         if self.logy:
             y = np.log10(y[y>0])
         
+        if (self.logx and x.size==0) or (self.logy and y.size==0):
+            raise Exception('Data has no positive values, and therefore cannot be log-scaled')
+            
         mapped = self.ax.transLimits.transform(list(zip(x,y)))
         x_in_range,y_in_range = np.logical_and(mapped>=0.0, mapped<=1.0).T
         idx, = np.nonzero(x_in_range & y_in_range)
         mapped = mapped[idx]
         mapped = np.round(mapped*[self.columns-1,self.lines-1])
+        if mapped.size:
+            mapped = np.unique(mapped, axis=0)
 
         return mapped.astype(int), idx
     
@@ -116,11 +121,11 @@ class TPlot(object):
         fmt = '%%%d.2e ┤' % (self.padding-1)
         for i,label in self.get_yticks():
             canvas[i][0] = fmt%label
-        # except:
-        
+         
         # add x-ticks
         # -----------------------------
         xticks = self.get_xticks()
+        print(xticks)
         fmt = '%%-%d.2e'%(xticks[1][0]-xticks[0][0])
 
         labels = ''
@@ -145,14 +150,16 @@ class TPlot(object):
             ticks = self.ax.get_xticks()
         else:
             ticks = self._xticks
-        yc = max(self.ax.get_ylim())*0.99
+        ymin,ymax = sorted(self.ax.get_ylim())
+        yc = max(ymin, ymax)-0.95*(ymax-ymin)
         # _,yc = self.ax.transLimits.inverted().transform((0.05,0.05))
         pos, idx = self.transform(ticks, yc*np.ones_like(ticks))
         return list(zip(pos[:,0], ticks[idx]))
     
     def get_yticks(self):
         ticks = self.ax.get_yticks()
-        xc = max(self.ax.get_xlim())*0.99
+        xmin,xmax = sorted(self.ax.get_xlim())
+        xc = max(xmin, xmax)-0.95*(xmax-xmin)
         # xc,_ = self.ax.transLimits.inverted().transform((0.95,0.95))
         pos, idx = self.transform(xc*np.ones_like(ticks), ticks)
         return list(zip(pos[:,1], ticks[idx]))
