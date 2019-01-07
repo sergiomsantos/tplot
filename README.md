@@ -81,4 +81,14 @@ number of bins (`--bins`) and data range (`-ax`):
 
 ![histogram image](images/example4.png)
 
+### Simple series plot
 
+Request a series plot (`-c`) of column 3
+
+![simple series image](images/example5.png)
+
+### Series plot with log-scale on  the y-axis
+
+Request a series plot (`-c`) of column 3 ith a log-scaled y-axis (`--logy`)
+
+![logy series image](images/example6.png)
