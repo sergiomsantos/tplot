@@ -65,18 +65,18 @@ class TPlot(object):
     
 
     def transform(self, x, y):
-        
-        if self.logx:
-            x = np.log10(x)
-        if self.logy:
-            y = np.log10(y)
 
+        if self.logx:
+            x = np.log10(x[x>0])
+        if self.logy:
+            y = np.log10(y[y>0])
+        
         mapped = self.ax.transLimits.transform(list(zip(x,y)))
         x_in_range,y_in_range = np.logical_and(mapped>=0.0, mapped<=1.0).T
         idx, = np.nonzero(x_in_range & y_in_range)
         mapped = mapped[idx]
         mapped = np.round(mapped*[self.columns-1,self.lines-1])
-        
+
         return mapped.astype(int), idx
     
     def get_canvas(self):
@@ -116,7 +116,8 @@ class TPlot(object):
         fmt = '%%%d.2e ┤' % (self.padding-1)
         for i,label in self.get_yticks():
             canvas[i][0] = fmt%label
-
+        # except:
+        
         # add x-ticks
         # -----------------------------
         xticks = self.get_xticks()
@@ -126,8 +127,8 @@ class TPlot(object):
         for i,label in xticks:
             canvas[-1][i] = '┬'
             labels += fmt%label
-        canvas[-1].insert(0, padding + '└')
 
+        canvas[-1].insert(0, padding + '└')
         canvas.append([padding[:-3] + xticks[0][0]*' ' + labels.rstrip()])
 
         # reset y-limits        
@@ -144,13 +145,15 @@ class TPlot(object):
             ticks = self.ax.get_xticks()
         else:
             ticks = self._xticks
-        xc,yc = self.ax.transLimits.inverted().transform((0.5,0.5))
+        yc = max(self.ax.get_ylim())*0.99
+        # _,yc = self.ax.transLimits.inverted().transform((0.05,0.05))
         pos, idx = self.transform(ticks, yc*np.ones_like(ticks))
         return list(zip(pos[:,0], ticks[idx]))
     
     def get_yticks(self):
         ticks = self.ax.get_yticks()
-        xc,yc = self.ax.transLimits.inverted().transform((0.5,0.5))
+        xc = max(self.ax.get_xlim())*0.99
+        # xc,_ = self.ax.transLimits.inverted().transform((0.95,0.95))
         pos, idx = self.transform(xc*np.ones_like(ticks), ticks)
         return list(zip(pos[:,1], ticks[idx]))
 
