@@ -40,13 +40,20 @@ Output configuration:
   --mpl                show plot in matplotlib window
 ```
 
-### Example 2
+### Simple scatter plot
 
-Simple scatter plots
+![simple scatter plot image](images/example1.png)
 
-```bash
-$ python tplot data.txt -xy 0 1 -xy 0 2
+### Multiple scatter plots
 
-```
+![multiple scatter plots image](images/example2.png)
 
-![simple scatter plot image](images/example2.png)
+### Pipes as data source
+
+![piping data image](images/example3.png)
+
+### Histogram
+
+![histogram image](images/example4.png)
+
+
