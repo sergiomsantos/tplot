@@ -34,7 +34,7 @@ if __name__ == "__main__":
         python_requires='>=2.6, <4',
         entry_points = {
             'console_scripts': [
-                'tplot = tplot.main',                  
+                'tplot = tplot:main',                  
             ],              
           },
     )
