@@ -60,35 +60,35 @@ Output configuration:
 
 Request a scatter plot (`-xy`) of columns 1 vs 0 of file `data.txt`:
 
-![simple scatter plot image](images/example1.png)
+![simple scatter plot image](resources/images/example1.png)
 
 ### Multiple scatter plots
 
 Request multiple scatter plots (`-xy`) of columns 1 vs 0 and 2 vs 0:
 
-![multiple scatter plots image](images/example2.png)
+![multiple scatter plots image](resources/images/example2.png)
 
 ### Pipes as data source
 
 Feed data into `tplot` directly using a pipe:
 
-![piping data image](images/example3.png)
+![piping data image](resources/images/example3.png)
 
 ### Histogram
 
 Request an histogram (`--hist`) of column 1 and specify the
 number of bins (`--bins`) and data range (`-ax`):
 
-![histogram image](images/example4.png)
+![histogram image](resources/images/example4.png)
 
 ### Simple series plot
 
 Request a series plot (`-c`) of column 3
 
-![simple series image](images/example5.png)
+![simple series image](resources/images/example5.png)
 
 ### Series plot with log-scale on  the y-axis
 
 Request a series plot (`-c`) of column 3 ith a log-scaled y-axis (`--logy`)
 
-![logy series image](images/example6.png)
+![logy series image](resources/images/example6.png)
