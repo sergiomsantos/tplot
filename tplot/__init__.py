@@ -276,7 +276,7 @@ def main():
     group.add_argument('--height', type=int,
         metavar='H', help='output height', default=tsize.lines)
     group.add_argument('--mpl', action='store_true', help='show plot in matplotlib window')
-    group.add_argument('--no-color', action='store_true', help='suppress coloured output')
+    group.add_argument('--no-color', action='store_true', help='suppress colored output')
 
     args = parser.parse_args()
 

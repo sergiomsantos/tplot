@@ -65,7 +65,7 @@ Output configuration:
   --width W            output width
   --height H           output height
   --mpl                show plot(s) in matplotlib window
-  --no-color           suppress coloured output
+  --no-color           suppress colored output
 ```
 
 ### Simple scatter plot
@@ -99,8 +99,14 @@ Request a series plot (`-c`) of column 3
 
 ![simple series image](resources/images/example5.png)
 
-### Series plot with log-scale on  the y-axis
+### Series plot with log-scale on the y-axis
 
 Request a series plot (`-c`) of column 3 ith a log-scaled y-axis (`--logy`)
 
 ![logy series image](resources/images/example6.png)
+
+### Supress colored output
+
+Supress colored output (`--no-color`)
+
+![dull image](resources/images/example7.png)
