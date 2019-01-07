@@ -281,7 +281,7 @@ def main():
     args = parser.parse_args()
 
     if args.file is None:
-        print('\nError: Missing "file" argument.')
+        print('Error: Missing "file" argument.')
         exit(1)
         
     run(args)
