@@ -234,11 +234,11 @@ def main():
     #                 '%s requires 2 or 3 values, %d given' % (option_string, len(values)))
     #         super(TwoArgsLabeled, self).__call__(parser, namespace, values, option_string)
 
-
+    desc = 'A Python package for creating and displaying matplotlib plots in the console/terminal'
 
     SRC = None if sys.stdin.isatty() else sys.stdin
 
-    parser = argparse.ArgumentParser('tplot')
+    parser = argparse.ArgumentParser('tplot', description=desc)
     parser.add_argument('file', nargs='?', default=SRC)
 
     group = parser.add_argument_group('Plot arguments')

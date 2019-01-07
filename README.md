@@ -1,12 +1,13 @@
 # TPlot
 
-Output Matplotlib plots to the console
+A Python package for creating and displaying matplotlib plots in the console/terminal.
 
 ## Installation
 
 ```bash
 # clone repository
 $ git clone https://github.com/sergiomsantos/tplot.git
+
 # install package
 $ python setup.py install
 ```
@@ -23,7 +24,7 @@ $ tplot -h
 usage: tplot [-h] [-xy X [Y ...]] [-c [C [C ...]]] [--hist [H [H ...]]]
              [--bins N] [-d D] [-s N] [-ax xmin [xmax ...]]
              [-ay ymin [ymax ...]] [--logx] [--logy] [--width W] [--height H]
-             [--mpl]
+             [--mpl] [--no-color]
              [file]
 
 positional arguments:
@@ -51,7 +52,8 @@ Axis configuration:
 Output configuration:
   --width W            output width
   --height H           output height
-  --mpl                show plot in matplotlib window
+  --mpl                show plot(s) in matplotlib window
+  --no-color           suppress coloured output
 ```
 
 ### Simple scatter plot
