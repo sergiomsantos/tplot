@@ -10,6 +10,18 @@ $ git clone https://github.com/sergiomsantos/tplot.git
 
 # install package
 $ python setup.py install
+
+# test installation
+#  as an executable on the user's PATH
+$ tploh -h
+usage: tplot [-h] [-xy X [Y ...]] [-c [C [C ...]]] [--hist [H [H ...]]]
+  [...]
+  
+#  as a module
+$ python -m tplot
+usage: tplot [-h] [-xy X [Y ...]] [-c [C [C ...]]] [--hist [H [H ...]]]
+  [...]
+
 ```
 
 
