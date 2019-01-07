@@ -58,7 +58,7 @@ Output configuration:
 
 ### Simple scatter plot
 
-Request a scatter plot (`-xy`) of column 1 against column 0 of file `data.txt`:
+Request a scatter plot (`-xy`) of columns 1 vs 0 of file `data.txt`:
 
 ![simple scatter plot image](images/example1.png)
 
@@ -76,7 +76,8 @@ Feed data into `tplot` directly using a pipe:
 
 ### Histogram
 
-Request an histogram (`--hist`) of column 1 and specify number of bins (`--bins`) and data range (`-ax`):
+Request an histogram (`--hist`) of column 1 and specify the
+number of bins (`--bins`) and data range (`-ax`):
 
 ![histogram image](images/example4.png)
 
