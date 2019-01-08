@@ -7,14 +7,14 @@ A Python package for creating and displaying matplotlib plots in the console/ter
 ## Index
 
 1. [Installation](#installation)
-2. [Usage](#usage)
-   - [Help](#help)
+2. [Help](#help)
 3. [Examples](#examples)
    - [Simple series plot](#simple-series-plot)
+   - [Simple scatter plot](#simple-scatter-plot)
    - [Multiple scatter plots](#multiple-scatter-plots)
    - [Pipes as data source](#pipes-as-data-source)
-   - [Histogram](#histogram)
-   - [Simple series plot](#simple-series-plot)
+   - [STDIN as data source](#stdin-as-data-source)
+   - [Histograms](#histograms)
    - [Series plot with log-scale on the y-axis](#series-plot-with-log-scale-on-the-y-axis)
    - [Supress colored output](#supress-colored-output)
    - [Output as a Matplotlib plot](#output-as-a-Matplotlib-plot)
@@ -49,9 +49,7 @@ usage: tplot [-h] [--version] [-f FILE] [-c C L? [C L? ...]]
   [...]
 ```
 
-## Usage
-
-### Help
+## Help
 
 Help is available through the `-h` or `--help` flags:
 
@@ -156,7 +154,7 @@ $ tplot -f - -xy 0 1 'first fibonacci numbers'
 
 ![stdin data image](resources/images/example4.png)
 
-### Histogram
+### Histograms
 
 Request an histogram (`--hist`) of column 1 and specify the
 number of bins (`--bins`) and data range (`-ax`):
