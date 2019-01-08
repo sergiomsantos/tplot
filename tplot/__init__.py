@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from itertools import cycle
 import numpy as np
 
+__version__ = '0.1.0'
 
 class Colors:
     PURPLE = '\033[95m'
@@ -14,7 +15,6 @@ class Colors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
-
 
 
 class TPlot(object):
@@ -38,9 +38,12 @@ class TPlot(object):
         self._xticks = None
         if use_colors:
             self._colors  = cycle([Colors.BLUE, Colors.GREEN, Colors.RED, Colors.PURPLE])
+            self._endc = Colors.ENDC
         else:
             self._colors  = cycle(['',''])
+            self._endc = ''
         self._markers = cycle('ox+-.')
+
     
     def plot(self, x, y=None, color=None, marker=None, label=None, fill=False):
         if y is None:
@@ -79,8 +82,8 @@ class TPlot(object):
         idx, = np.nonzero(x_in_range & y_in_range)
         mapped = mapped[idx]
         mapped = np.round(mapped*[self.columns-1,self.lines-1])
-        if mapped.size:
-            mapped = np.unique(mapped, axis=0)
+        # if mapped.size:
+        #    mapped = np.unique(mapped, axis=0)
 
         return mapped.astype(int), idx
     
@@ -94,7 +97,7 @@ class TPlot(object):
         # add curves
         for x,y,c,m,l,f in self.datasets:
             mapped,_ = self.transform(x, y)
-            marker = c + m + Colors.ENDC
+            marker = c + m + self._endc
             for i,j in mapped:
                 canvas[j][i] = marker
                 if f:
@@ -106,7 +109,7 @@ class TPlot(object):
         for n,dataset in enumerate(self.datasets):
             _,_,color,marker,label,_ = dataset
             k = len(label)
-            legend = color + label + ' ' + marker + Colors.ENDC
+            legend = color + label + ' ' + marker + self._endc
             canvas[n+1] = canvas[n+1][:-k-4] + [' ', legend]
         
         # add frame
@@ -185,18 +188,24 @@ def run(args):
         for n,row in enumerate(data):
             plot.plot(row, label='col-%d'%n)
 
-    for col in args.c:
-        plot.plot(data[col], label='col-%d'%col)
+    for col,l in args.c:
+        if l is None:
+            l = 'col-%d'%col
+        plot.plot(data[col], label=l)
     
-    for col in args.hist:
+    for col,l in args.hist:
+        if l is None:
+            l = 'hist-%d'%col
         limits = args.ax[-1] if args.ax else None
         hist, bin_edges = np.histogram(data[col], bins=args.bins, range=limits)
         x = bin_edges[:-1] + bin_edges[1:]
-        plot.plot(0.5*x, hist, label='hist-%d'%col, fill=True)
+        plot.plot(0.5*x, hist, label=l, fill=True)
         plot.set_xticks(bin_edges)
     
-    for i,j in args.xy:
-        plot.plot(data[i], data[j], label='%d-vs-%d'%(j,i))
+    for i,j,l in args.xy:
+        if l is None:
+            l = '%d-vs-%d'%(j,i)
+        plot.plot(data[i], data[j], label=l)
     
     if args.ax:
         plot.set_xlim(*args.ax[-1])
@@ -206,8 +215,7 @@ def run(args):
     if args.mpl:
         plt.show()
     else:
-        s = str(plot)
-        print(s)
+        print(plot)
 
 
 def main():
@@ -228,54 +236,73 @@ def main():
             r,c = 24,80
         tsize = TSize(int(c), int(r))
 
-
-    class TwoArgs(argparse._AppendAction):
-        def __call__(self, parser, namespace, values, option_string=None):
-            if len(values) != 2:
-                raise argparse.ArgumentError(self,
-                    '%s requires 2 values, %d given' % (option_string, len(values)))
-            super(TwoArgs, self).__call__(parser, namespace, values, option_string)
-
-    # class TwoOrThree(argparse._AppendAction):
-    #     def __call__(self, parser, namespace, values, option_string=None):
-    #         if len(values) not in (2,3):
-    #             raise argparse.ArgumentError(self,
-    #                 '%s requires 2 or 3 values, %d given' % (option_string, len(values)))
-    #         super(TwoArgsLabeled, self).__call__(parser, namespace, values, option_string)
-
+    def get_append_action(n):
+        class CustomAppendAction(argparse._AppendAction):
+            def __call__(self, parser, namespace, values, option_string=None):
+                if len(values) == n:
+                    values.append(None)
+                elif len(values) != (n+1):
+                    raise argparse.ArgumentError(self,
+                        '%s requires %d ints and an optional label, %d values given. Consider splitting across multiple %s flags.' % (
+                            option_string, n, len(values), option_string))
+                try:
+                    label = values[-1]
+                    values = list(map(int, values[:-1]))
+                except ValueError as ex:
+                    print(ex)
+                    raise argparse.ArgumentError(self,str(ex))
+                else:
+                    values.append(label)
+                super(CustomAppendAction, self).__call__(parser, namespace, values, option_string)
+        return CustomAppendAction
+    
     desc = 'A Python package for creating and displaying matplotlib plots in the console/terminal'
 
     SRC = None if sys.stdin.isatty() else sys.stdin
 
+    # Instantiate parser
+    # ------------------------------------------- 
     parser = argparse.ArgumentParser('tplot', description=desc)
-    parser.add_argument('file', nargs='?', default=SRC)
+    parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 
+    # parser> Input source
+    # ------------------------------------------- 
+    parser.add_argument('-f', '--file', default=SRC, help='source file. Use "-" to read from stdin')
+
+    # parser> plot arguments
+    # ------------------------------------------- 
     group = parser.add_argument_group('Plot arguments')
-    group.add_argument('-xy', action=TwoArgs, nargs='+', type=int,
-        metavar=('X','Y'), help='scatter plot of column X vs Y', default=[])
-    group.add_argument('-c', type=int, nargs='*',
-        metavar='C', help='series plot of column(s) C', default=[])
-    group.add_argument('--hist', nargs='*', type=int,
-        metavar='H', help='histogram of column(s) H', default=[])
+    group.add_argument('-c', action=get_append_action(1), nargs='+', type=str,
+        metavar='C Label?', help='series plot of column(s) <C> with optional label <Label>', default=[])
+    group.add_argument('-xy', action=get_append_action(2), nargs='+', type=str,
+        metavar='X Y Label?', help='scatter plot of column <X> vs <Y> with optional label <Label>', default=[])
+    group.add_argument('--hist', action=get_append_action(1), nargs='+', type=str,
+        metavar='H Label?', help='histogram of column(s) <H> with optional label <Label>', default=[])
     group.add_argument('--bins', type=int,
         metavar='N', help='number of bins', default=10)
 
+    # parser> data parsing
+    # ------------------------------------------- 
     group = parser.add_argument_group('Data parsing')
     group.add_argument('-d', '--delimiter', type=str,
         metavar='D', help='delimiter')
     group.add_argument('-s', '--skip', type=int, default=0,
         metavar='N', help='skip first N rows')
 
+    # parser> axes configuration
+    # ------------------------------------------- 
     group = parser.add_argument_group('Axis configuration')
-    group.add_argument('-ax', action=TwoArgs, nargs='+', type=float,
+    group.add_argument('-ax', action='append', nargs=2, type=float,
         metavar=('xmin','xmax'), help='x-axis limits')
-    group.add_argument('-ay', action=TwoArgs, nargs='+', type=float,
+    group.add_argument('-ay', action='append', nargs=2, type=float,
         metavar=('ymin','ymax'), help='y-axis limits')
     group.add_argument('--logx', action='store_true',
         help='set log-scale on the x-axis')
     group.add_argument('--logy', action='store_true',
         help='set log-scale on the y-axis')
 
+    # parser> output configuration
+    # ------------------------------------------- 
     group = parser.add_argument_group('Output configuration')
     group.add_argument('--width', type=int,
         metavar='W', help='output width', default=tsize.columns)
@@ -284,11 +311,17 @@ def main():
     group.add_argument('--mpl', action='store_true', help='show plot in matplotlib window')
     group.add_argument('--no-color', action='store_true', help='suppress colored output')
 
+
+    # parser> run parser
+    # ------------------------------------------- 
     args = parser.parse_args()
+    print(args)
 
     if args.file is None:
         print('Error: Missing "file" argument.')
         exit(1)
-        
+    elif args.file == '-':
+        args.file = sys.stdin
+
     run(args)
 
