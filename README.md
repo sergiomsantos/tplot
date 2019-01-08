@@ -2,8 +2,6 @@
 
 A Python package for creating and displaying matplotlib plots in the console/terminal.
 
-----
-
 ## Index
 
 1. [Installation](#installation)
