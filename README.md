@@ -4,24 +4,32 @@ A Python package for creating and displaying matplotlib plots in the console/ter
 
 ## Installation
 
+1. clone repository
+
 ```console
-# clone repository
 $ git clone https://github.com/sergiomsantos/tplot.git
+```
 
-# install package
+2. install package
+
+```console
 $ python setup.py install
+```
 
-# test installation
-#  as an executable on the user's PATH
+3. test installation (as an executable on the user's `PATH`)
+
+```console
 $ tploh -h
 usage: tplot [-h] [--version] [-f FILE] [-c C L? [C L? ...]]
   [...]
+```
+
+4. or as a `python` module
   
-#  as a module
+```console
 $ python -m tplot
 usage: tplot [-h] [--version] [-f FILE] [-c C L? [C L? ...]]
   [...]
-
 ```
 
 
