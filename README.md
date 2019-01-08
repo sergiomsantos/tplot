@@ -4,7 +4,7 @@ A Python package for creating and displaying matplotlib plots in the console/ter
 
 ## Installation
 
-```bash
+```console
 # clone repository
 $ git clone https://github.com/sergiomsantos/tplot.git
 
@@ -31,7 +31,7 @@ usage: tplot [-h] [--version] [-f FILE] [-c C L? [C L? ...]]
 
 Help is available through the `-h` or `--help` flags:
 
-```bash
+```console
 $ tplot -h
 usage: tplot [-h] [--version] [-f FILE] [-c C L? [C L? ...]]
              [-xy X Y L? [X Y L? ...]] [--hist H L? [H L? ...]] [--bins N]
