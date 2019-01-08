@@ -8,13 +8,21 @@ import numpy as np
 __version__ = '0.1.1'
 
 class Colors:
-    PURPLE = '\033[95m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    _PURPLE = '\033[95m'
+    _BLUE = '\033[94m'
+    _GREEN = '\033[92m'
+    _RED = '\033[91m'
+    _ENDC = '\033[0m'
+    _BOLD = '\033[1m'
+    _UNDERLINE = '\033[4m'
+    
+    def __init__(self, use_colors=True):
+        self.use_colors = use_colors
+
+    def __getattr__(self, attr):
+        if self.use_colors:
+            return getattr(self, '_'+attr)
+        return ''
 
 
 class TPlot(object):
@@ -22,10 +30,11 @@ class TPlot(object):
     def __init__(self, columns, lines, logx=False, logy=False, padding=10, use_colors=True):
         self.columns = columns - padding - 5
         self.lines = lines - 5
+        self.padding = padding
+        self.datasets = []
+        
         self.fig = plt.figure()
         self.ax  = self.fig.add_subplot(111)
-        self.datasets = []
-        self.padding = padding
 
         self.logx = logx
         if logx:
@@ -36,12 +45,10 @@ class TPlot(object):
             self.ax.set_yscale('log')
         
         self._xticks = None
-        if use_colors:
-            self._colors  = cycle([Colors.BLUE, Colors.GREEN, Colors.RED, Colors.PURPLE])
-            self._endc = Colors.ENDC
-        else:
-            self._colors  = cycle(['',''])
-            self._endc = ''
+        
+        colors = Colors(use_colors)
+        self._colors = cycle([colors.BLUE, colors.GREEN, colors.RED, colors.PURPLE])
+        self._endc = colors.ENDC
         self._markers = cycle('ox+-.')
 
     
@@ -80,10 +87,12 @@ class TPlot(object):
         mapped = self.ax.transLimits.transform(list(zip(x,y)))
         x_in_range,y_in_range = np.logical_and(mapped>=0.0, mapped<=1.0).T
         idx, = np.nonzero(x_in_range & y_in_range)
+        
         mapped = mapped[idx]
-        mapped = np.round(mapped*[self.columns-1,self.lines-1])
-        # if mapped.size:
-        #    mapped = np.unique(mapped, axis=0)
+        mapped = np.round(mapped * [self.columns-1,self.lines-1])
+        
+        if mapped.size:
+           mapped = np.unique(mapped, axis=0)
 
         return mapped.astype(int), idx
     
@@ -95,6 +104,7 @@ class TPlot(object):
         canvas = [(self.columns)*[' '] for _ in range(self.lines)]
         
         # add curves
+        # -----------------------------
         for x,y,c,m,l,f in self.datasets:
             mapped,_ = self.transform(x, y)
             marker = c + m + self._endc
