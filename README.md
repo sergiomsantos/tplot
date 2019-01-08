@@ -2,6 +2,23 @@
 
 A Python package for creating and displaying matplotlib plots in the console/terminal.
 
+----
+
+## Index
+
+1. [Installation](#installation)
+2. [Usage](#usage)
+   - [Help](#help)
+3. [Examples](#examples)
+   - [Simple series plot](#simple-series-plot)
+   - [Multiple scatter plots](#multiple-scatter-plots)
+   - [Pipes as data source](#pipes-as-data-source)
+   - [Histogram](#histogram)
+   - [Simple series plot](#simple-series-plot)
+   - [Series plot with log-scale on the y-axis](#series-plot-with-log-scale-on-the-y-axis)
+   - [Supress colored output](#supress-colored-output)
+   - [Output as a Matplotlib plot](#output-as-a-Matplotlib-plot)
+
 ## Installation
 
 1. clone repository
@@ -32,8 +49,7 @@ usage: tplot [-h] [--version] [-f FILE] [-c C L? [C L? ...]]
   [...]
 ```
 
-
-# Usage
+## Usage
 
 ### Help
 
@@ -79,6 +95,8 @@ Output configuration:
   --mpl                 show plot in matplotlib window
   --no-color            suppress colored output
 ```
+
+## Examples
 
 ### Simple series plot
 
