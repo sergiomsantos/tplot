@@ -1,9 +1,10 @@
-import platform
 from setuptools import setup, find_packages
+import platform
+import tplot
 
 if __name__ == "__main__":
     setup(name='tplot',
-        version='0.1.0',
+        version=tplot.__version__,
         url="https://github.com/sergiomsantos/tplot",
         description='A Python package for creating and displaying matplotlib plots in the console/terminal',
         long_description='A Python package for creating and displaying matplotlib plots in the console/terminal',
