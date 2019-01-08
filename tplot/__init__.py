@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from itertools import cycle
 import numpy as np
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 class Colors:
     PURPLE = '\033[95m'
@@ -182,7 +182,12 @@ def run(args):
     else:
         data = data.T
     
-    plot = TPlot(args.width, args.height, args.logx, args.logy, use_colors=not args.no_color)
+    plot = TPlot(args.width, args.height,
+                logx=args.logx,
+                logy=args.logy,
+                padding=args.padding,
+                use_colors=not args.no_color
+    )
     
     if not (args.c or args.xy or args.hist):
         for n,row in enumerate(data):
@@ -243,13 +248,12 @@ def main():
                     values.append(None)
                 elif len(values) != (n+1):
                     raise argparse.ArgumentError(self,
-                        '%s requires %d ints and an optional label, %d values given. Consider splitting across multiple %s flags.' % (
+                        '%s requires %d int(s) and an optional label, %d values given. Consider splitting across multiple %s flags.' % (
                             option_string, n, len(values), option_string))
                 try:
                     label = values[-1]
                     values = list(map(int, values[:-1]))
                 except ValueError as ex:
-                    print(ex)
                     raise argparse.ArgumentError(self,str(ex))
                 else:
                     values.append(label)
@@ -273,11 +277,11 @@ def main():
     # ------------------------------------------- 
     group = parser.add_argument_group('Plot arguments')
     group.add_argument('-c', action=get_append_action(1), nargs='+', type=str,
-        metavar='C Label?', help='series plot of column(s) <C> with optional label <Label>', default=[])
+        metavar='C L?', help='series plot of column(s) C with optional label L', default=[])
     group.add_argument('-xy', action=get_append_action(2), nargs='+', type=str,
-        metavar='X Y Label?', help='scatter plot of column <X> vs <Y> with optional label <Label>', default=[])
+        metavar='X Y L?', help='scatter plot of column X vs Y with optional label L', default=[])
     group.add_argument('--hist', action=get_append_action(1), nargs='+', type=str,
-        metavar='H Label?', help='histogram of column(s) <H> with optional label <Label>', default=[])
+        metavar='H L?', help='histogram of column(s) H with optional label L', default=[])
     group.add_argument('--bins', type=int,
         metavar='N', help='number of bins', default=10)
 
@@ -308,6 +312,8 @@ def main():
         metavar='W', help='output width', default=tsize.columns)
     group.add_argument('--height', type=int,
         metavar='H', help='output height', default=tsize.lines)
+    group.add_argument('--padding', type=int,
+        metavar='P', help='left padding', default=10)
     group.add_argument('--mpl', action='store_true', help='show plot in matplotlib window')
     group.add_argument('--no-color', action='store_true', help='suppress colored output')
 
@@ -315,10 +321,9 @@ def main():
     # parser> run parser
     # ------------------------------------------- 
     args = parser.parse_args()
-    print(args)
 
     if args.file is None:
-        print('Error: Missing "file" argument.')
+        print('Error: Missing "file" (-f) argument.')
         exit(1)
     elif args.file == '-':
         args.file = sys.stdin
