@@ -14,12 +14,12 @@ $ python setup.py install
 # test installation
 #  as an executable on the user's PATH
 $ tploh -h
-usage: tplot [-h] [-xy X [Y ...]] [-c [C [C ...]]] [--hist [H [H ...]]]
+usage: tplot [-h] [--version] [-f FILE] [-c C L? [C L? ...]]
   [...]
   
 #  as a module
 $ python -m tplot
-usage: tplot [-h] [-xy X [Y ...]] [-c [C [C ...]]] [--hist [H [H ...]]]
+usage: tplot [-h] [--version] [-f FILE] [-c C L? [C L? ...]]
   [...]
 
 ```
@@ -33,39 +33,43 @@ Help is available through the `-h` or `--help` flags:
 
 ```bash
 $ tplot -h
-usage: tplot [-h] [-xy X [Y ...]] [-c [C [C ...]]] [--hist [H [H ...]]]
-             [--bins N] [-d D] [-s N] [-ax xmin [xmax ...]]
-             [-ay ymin [ymax ...]] [--logx] [--logy] [--width W] [--height H]
-             [--mpl] [--no-color]
-             [file]
+usage: tplot [-h] [--version] [-f FILE] [-c C L? [C L? ...]]
+             [-xy X Y L? [X Y L? ...]] [--hist H L? [H L? ...]] [--bins N]
+             [-d D] [-s N] [-ax xmin xmax] [-ay ymin ymax] [--logx] [--logy]
+             [--width W] [--height H] [--padding P] [--mpl] [--no-color]
 
-positional arguments:
-  file
+A Python package for creating and displaying matplotlib plots in the
+console/terminal
 
 optional arguments:
-  -h, --help           show this help message and exit
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  -f FILE, --file FILE  source file. Use "-" to read from stdin
 
 Plot arguments:
-  -xy X [Y ...]        scatter plot of column X vs Y
-  -c [C [C ...]]       series plot of column(s) C
-  --hist [H [H ...]]   histogram of column(s) H
-  --bins N             number of bins
+  -c C L? [C L? ...]    series plot of column(s) C with optional label L
+  -xy X Y L? [X Y L? ...]
+                        scatter plot of column X vs Y with optional label L
+  --hist H L? [H L? ...]
+                        histogram of column(s) H with optional label L
+  --bins N              number of bins
 
 Data parsing:
-  -d D, --delimiter D  delimiter
-  -s N, --skip N       skip first N rows
+  -d D, --delimiter D   delimiter
+  -s N, --skip N        skip first N rows
 
 Axis configuration:
-  -ax xmin [xmax ...]  x-axis limits
-  -ay ymin [ymax ...]  y-axis limits
-  --logx               set log-scale on the x-axis
-  --logy               set log-scale on the y-axis
+  -ax xmin xmax         x-axis limits
+  -ay ymin ymax         y-axis limits
+  --logx                set log-scale on the x-axis
+  --logy                set log-scale on the y-axis
 
 Output configuration:
-  --width W            output width
-  --height H           output height
-  --mpl                show plot(s) in matplotlib window
-  --no-color           suppress colored output
+  --width W             output width
+  --height H            output height
+  --padding P           left padding
+  --mpl                 show plot in matplotlib window
+  --no-color            suppress colored output
 ```
 
 ### Simple series plot
