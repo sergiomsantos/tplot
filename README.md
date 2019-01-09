@@ -82,6 +82,8 @@ Plot arguments:
   --hist H L? [H L? ...]
                         histogram of column(s) H with optional label L
   --bins N              number of bins
+  --lines               requires that the x-coordinate sequence is increasing
+                        if the -xy option is specified
 
 Data parsing:
   -d D, --delimiter D   delimiter
@@ -92,6 +94,7 @@ Axis configuration:
   -ay ymin ymax         y-axis limits
   --logx                set log-scale on the x-axis
   --logy                set log-scale on the y-axis
+  --grid                show grid
 
 Output configuration:
   --width W             output width
