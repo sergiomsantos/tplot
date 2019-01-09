@@ -4,10 +4,24 @@ from __future__ import print_function
 import matplotlib.pyplot as plt
 from itertools import cycle
 import numpy as np
+import sys
 
-__version__ = '0.1.1'
+__version__ = '0.2.0'
+
+
+if sys.version_info[0] < 3:    
+    def to_dots(m, kernel):
+        # 10240 = int('2800', 16)
+        return unichr((kernel*m).sum()+10240).encode('utf-8')
+else:
+    def to_dots(m, kernel):
+        return chr((kernel*m).sum()+10240)
+
 
 class Colors:
+
+    _LYELLOW = '\033[33m'
+    _LGRAY = '\033[2m'
     _PURPLE = '\033[95m'
     _BLUE = '\033[94m'
     _GREEN = '\033[92m'
@@ -25,9 +39,52 @@ class Colors:
         return ''
 
 
+BRAILLE_KERNEL = np.array([
+    [  1,   8],
+    [  2,  16],
+    [  4,  32],
+    [ 64, 128]
+])
+
+KERNEL22 = np.array([
+    [  1,   2],
+    [  4,   8]
+])
+
+KERNEL41 = np.array([
+    [ 1],
+    [ 2],
+    [ 4],
+    [ 8],
+])
+
+
+# SQUARE_MAP = {
+#     0: u'',
+#     1: u'\u2598',
+#     2: u'\u259D',
+#     3: u'\u2580',
+#     4: u'\u2596',
+#     5: u'\u258C',
+#     6: u'\u259E',
+#     7: u'\u259B',
+#     8: u'\u2597',
+#     9: u'\u259A',
+#    10: u'\u2590',
+#    11: u'\u259C',
+#    12: u'\u2584',
+#    13: u'\u2599',
+#    14: u'\u259F',
+#    15: u'\u2588',
+# }
+
+
+
+
+
 class TPlot(object):
     
-    def __init__(self, columns, lines, logx=False, logy=False, padding=10, use_colors=True):
+    def __init__(self, columns, lines, logx=False, logy=False, padding=10, use_colors=True, connect_points=False):
         self.columns = columns - padding - 5
         self.lines = lines - 5
         self.padding = padding
@@ -45,11 +102,13 @@ class TPlot(object):
             self.ax.set_yscale('log')
         
         self._xticks = None
+        self._grid = False
+        self.connect = connect_points
         
         colors = Colors(use_colors)
         self._colors = cycle([colors.BLUE, colors.GREEN, colors.RED, colors.PURPLE])
         self._endc = colors.ENDC
-        self._markers = cycle('ox+-.')
+        self._markers = cycle('ox+.')
 
     
     def plot(self, x, y=None, color=None, marker=None, label=None, fill=False):
@@ -63,9 +122,13 @@ class TPlot(object):
         if label is None:
             label = 'dataset-%d' % len(self.datasets)
         self.datasets.append((x,y,color,marker,label,fill))
-        self.ax.plot(x,y)
+        self.ax.plot(x, y, (marker + '-') if self.connect else marker)
 
 
+    def show_grid(self, show):
+        self.ax.grid(show)
+        self._grid = show
+    
     def set_xlim(self, xmin, xmax):
         self.ax.set_xlim(xmin, xmax)
 
@@ -74,28 +137,36 @@ class TPlot(object):
         self.ax.set_ylim(ymin, ymax)        
     
 
-    def transform(self, x, y):
+    def transform(self, x, y, kernel=None):
 
+        xy = np.c_[x,y]
         if self.logx:
-            x = np.log10(x[x>0])
+            xy[:,0] = np.log10(xy[:,0])
         if self.logy:
-            y = np.log10(y[y>0])
+            xy[:,1] = np.log10(xy[:,1])
         
-        if (self.logx and x.size==0) or (self.logy and y.size==0):
-            raise Exception('Data has no positive values, and therefore cannot be log-scaled')
-            
-        mapped = self.ax.transLimits.transform(list(zip(x,y)))
+        # transform to axes coordinates
+        mapped = self.ax.transLimits.transform(xy)
+        
+        # keep only the ones within the canvas
         x_in_range,y_in_range = np.logical_and(mapped>=0.0, mapped<=1.0).T
         idx, = np.nonzero(x_in_range & y_in_range)
-        
         mapped = mapped[idx]
-        mapped = np.round(mapped * [self.columns-1,self.lines-1])
+
+        # pixelate the results
+        if kernel is None:
+            mapped = np.round(mapped * [self.columns-1,self.lines-1])
+        else:
+            L,C = kernel.shape
+            mapped = np.round(mapped * [C*(self.columns-1), L*(self.lines-1)])
         
+        # keep the unique pairs
         if mapped.size:
            mapped = np.unique(mapped, axis=0)
 
         return mapped.astype(int), idx
     
+
     def get_canvas(self):
         
         ylim = self.ax.get_ylim()
@@ -103,17 +174,67 @@ class TPlot(object):
         
         canvas = [(self.columns)*[' '] for _ in range(self.lines)]
         
+        # add grid
+        # -----------------------------
+        colors = Colors(True)
+        c = colors.LGRAY
+
+        xticks = self.get_xticks()
+        yticks = self.get_yticks()
+        if self._grid:
+            for i,_ in xticks:
+                for line in canvas:
+                    line[i] = c+'│'+self._endc
+            for i,_ in yticks:
+                canvas[i] = (self.columns)*[c+'─'+self._endc]
+            for i,_ in xticks:
+                for j,_ in yticks:
+                    canvas[j][i] = c+'┼'+self._endc
+        
         # add curves
         # -----------------------------
-        for x,y,c,m,l,f in self.datasets:
-            mapped,_ = self.transform(x, y)
-            marker = c + m + self._endc
-            for i,j in mapped:
-                canvas[j][i] = marker
-                if f:
-                   for line in canvas[j:]:
-                       line[i] = marker
-        
+        for x,y,c,m,l,fill in self.datasets:
+            
+            # ADD LINES
+            # ---------
+            if self.connect:
+                kernel = BRAILLE_KERNEL
+                L,C = kernel.shape
+                xi = np.linspace(0.0, 1.0, C*self.columns)
+
+                yi = np.ones_like(xi) * 0.5
+                pts = np.c_[xi,yi]
+                xi = self.ax.transLimits.inverted().transform(pts)[:,0]
+                xi = xi[np.logical_and(xi>=x.min(), xi<=x.max())]
+                yi = np.interp(xi, x, y)
+
+                mapped,_ = self.transform(xi, yi, kernel=kernel)
+
+                pixels = np.zeros((L*(self.lines), C*(self.columns)), dtype=int)
+                i,j = mapped.T
+                pixels[j,i] = 1
+                for i in range(0, C*self.columns, C):
+                    for j in range(0, L*self.lines, L):
+                        mat = pixels[j:j+L, i:i+C]
+                        if np.any(mat):
+                            canvas[j//L][i//C] = c + to_dots(mat, kernel) + self._endc
+            
+            
+            # ADD POINTS
+            # ----------
+            kernel = KERNEL41
+            L,C = kernel.shape
+            mapped,_ = self.transform(x, y, kernel=kernel)
+            
+            marker = c + ('█' if fill else m) + self._endc
+            
+            for i,j in mapped//[C,L]:
+                if fill:
+                    for line in canvas[j:]:
+                        line[i] = marker
+                else:
+                    canvas[j][i] = marker
+
         # add legends
         # -----------------------------
         for n,dataset in enumerate(self.datasets):
@@ -126,55 +247,78 @@ class TPlot(object):
         # -----------------------------
         padding = self.padding*' '
         for n,line in enumerate(canvas):
-            line.insert(0, padding + '│')
-        canvas.append(len(line)*['─'])
+            line.insert(0, padding + '┃')
+        canvas.append(len(line)*['━'])
 
         # add y-ticks
         # -----------------------------
-        fmt = '%%%d.2e ┤' % (self.padding-1)
-        for i,label in self.get_yticks():
-            canvas[i][0] = fmt%label
+        if yticks:
+            fmt = '%%%d.2e ┨' % (self.padding-1)
+            for i,label in yticks:
+                canvas[i][0] = fmt%label
          
         # add x-ticks
         # -----------------------------
-        xticks = self.get_xticks()
-        fmt = '%%-%d.2e'%(xticks[1][0]-xticks[0][0])
+        if xticks:
+            fmt = '%%-%d.2e'%(xticks[1][0]-xticks[0][0])
+            labels = ''
+            for i,label in xticks:
+                canvas[-1][i] = '┯'
+                labels += fmt%label
 
-        labels = ''
-        for i,label in xticks:
-            canvas[-1][i] = '┬'
-            labels += fmt%label
-
-        canvas[-1].insert(0, padding + '└')
-        canvas.append([padding[:-3] + xticks[0][0]*' ' + labels.rstrip()])
-
+            canvas[-1].insert(0, padding + '┗')
+            canvas.append([padding[:-3] + xticks[0][0]*' ' + labels.rstrip()])
+        
         # reset y-limits        
         self.ax.set_ylim(ylim)
         
         return canvas
     
-
     def set_xticks(self, ticks):
         self._xticks = ticks
 
     def get_xticks(self):
+        # if self._xticks is None:
+        #     ticks = self.ax.get_xticks()
+        # else:
+        #     ticks = self._xticks
+        # print('x',ticks)
+        # ymin,ymax = sorted(self.ax.get_ylim())
+        # yc = max(ymin, ymax)-0.05*(ymax-ymin)
+        # print('x',ymin,ymax,yc)
+        # # _,yc = self.ax.transLimits.inverted().transform((0.05,0.05))
+        # pos, idx = self.transform(ticks, yc*np.ones_like(ticks))
+        # print('x',pos,idx)
+        # print('x',list(zip(pos[:,1], ticks[idx][::-1])))
+        # return list(zip(pos[:,0], ticks[idx]))
+
+        # get ticks
         if self._xticks is None:
             ticks = self.ax.get_xticks()
         else:
             ticks = self._xticks
-        ymin,ymax = sorted(self.ax.get_ylim())
-        yc = max(ymin, ymax)-0.95*(ymax-ymin)
-        # _,yc = self.ax.transLimits.inverted().transform((0.05,0.05))
+        
+        # find center y-coordinate
+        yc = 0.5*np.sum(self.ax.get_ylim())
         pos, idx = self.transform(ticks, yc*np.ones_like(ticks))
+        
         return list(zip(pos[:,0], ticks[idx]))
-    
+
     def get_yticks(self):
-        ticks = self.ax.get_yticks()
-        xmin,xmax = sorted(self.ax.get_xlim())
-        xc = max(xmin, xmax)-0.95*(xmax-xmin)
-        # xc,_ = self.ax.transLimits.inverted().transform((0.95,0.95))
+        
+        # problems with Log10Transform in earlier versions of MPL
+        # works with 2.2.3 and above
+
+        # reverse ordering due to differences in axes origin
+        # between MPL and Tplot
+        ticks = self.ax.get_yticks()[::-1]
+
+        # get the center x-coordinate
+        xc = 0.5*np.sum(self.ax.get_xlim())
         pos, idx = self.transform(xc*np.ones_like(ticks), ticks)
+        
         return list(zip(pos[:,1], ticks[idx]))
+
 
     def __str__(self):
         canvas = self.get_canvas()
@@ -196,9 +340,11 @@ def run(args):
                 logx=args.logx,
                 logy=args.logy,
                 padding=args.padding,
-                use_colors=not args.no_color
+                use_colors=not args.no_color,
+                connect_points=args.lines
     )
-    
+    plot.show_grid(args.grid)
+
     if not (args.c or args.xy or args.hist):
         for n,row in enumerate(data):
             plot.plot(row, label='col-%d'%n)
@@ -250,6 +396,7 @@ def main():
         except:
             r,c = 24,80
         tsize = TSize(int(c), int(r))
+    print('TERMINAL SIZE =', tsize.lines, tsize.columns)
 
     def get_append_action(n):
         class CustomAppendAction(argparse._AppendAction):
@@ -294,6 +441,7 @@ def main():
         metavar='H L?', help='histogram of column(s) H with optional label L', default=[])
     group.add_argument('--bins', type=int,
         metavar='N', help='number of bins', default=10)
+    group.add_argument('--lines', action='store_true', help='connect points using lines (requires sorted x-points')
 
     # parser> data parsing
     # ------------------------------------------- 
@@ -314,6 +462,8 @@ def main():
         help='set log-scale on the x-axis')
     group.add_argument('--logy', action='store_true',
         help='set log-scale on the y-axis')
+    group.add_argument('--grid', action='store_true',
+        help='show grid')
 
     # parser> output configuration
     # ------------------------------------------- 
