@@ -37,17 +37,7 @@ class Colors:
         if self.use_colors:
             return getattr(self, '_'+attr)
         return ''
-    
-# BRAILLE_KERNEL = np.array([
-#     [  1,   8, 0, 0, 0],
-#     [  2,  16, 0, 0, 0],
-#     [  4,  32, 0, 0, 0],
-#     [ 64, 128, 0, 0, 0]
-#     ,[  0,   0, 0, 0, 0]
-#     ,[  0,   0, 0, 0, 0]
-#     ,[  0,   0, 0, 0, 0]
-#     ,[  0,   0, 0, 0, 0]
-# ])
+
 
 BRAILLE_KERNEL = np.array([
     [  1,   8],
@@ -69,24 +59,24 @@ KERNEL41 = np.array([
 ])
 
 
-SQUARE_MAP = {
-    0: u'',
-    1: u'\u2598',
-    2: u'\u259D',
-    3: u'\u2580',
-    4: u'\u2596',
-    5: u'\u258C',
-    6: u'\u259E',
-    7: u'\u259B',
-    8: u'\u2597',
-    9: u'\u259A',
-   10: u'\u2590',
-   11: u'\u259C',
-   12: u'\u2584',
-   13: u'\u2599',
-   14: u'\u259F',
-   15: u'\u2588',
-}
+# SQUARE_MAP = {
+#     0: u'',
+#     1: u'\u2598',
+#     2: u'\u259D',
+#     3: u'\u2580',
+#     4: u'\u2596',
+#     5: u'\u258C',
+#     6: u'\u259E',
+#     7: u'\u259B',
+#     8: u'\u2597',
+#     9: u'\u259A',
+#    10: u'\u2590',
+#    11: u'\u259C',
+#    12: u'\u2584',
+#    13: u'\u2599',
+#    14: u'\u259F',
+#    15: u'\u2588',
+# }
 
 
 
@@ -94,7 +84,7 @@ SQUARE_MAP = {
 
 class TPlot(object):
     
-    def __init__(self, columns, lines, logx=False, logy=False, padding=10, use_colors=True):
+    def __init__(self, columns, lines, logx=False, logy=False, padding=10, use_colors=True, connect_points=False):
         self.columns = columns - padding - 5
         self.lines = lines - 5
         self.padding = padding
@@ -113,11 +103,12 @@ class TPlot(object):
         
         self._xticks = None
         self._grid = False
+        self.connect = connect_points
         
         colors = Colors(use_colors)
         self._colors = cycle([colors.BLUE, colors.GREEN, colors.RED, colors.PURPLE])
         self._endc = colors.ENDC
-        self._markers = cycle('ox+-.')
+        self._markers = cycle('ox+.')
 
     
     def plot(self, x, y=None, color=None, marker=None, label=None, fill=False):
@@ -131,9 +122,13 @@ class TPlot(object):
         if label is None:
             label = 'dataset-%d' % len(self.datasets)
         self.datasets.append((x,y,color,marker,label,fill))
-        self.ax.plot(x,y)
+        self.ax.plot(x, y, (marker + '-') if self.connect else marker)
 
 
+    def show_grid(self, show):
+        self.ax.grid(show)
+        self._grid = show
+    
     def set_xlim(self, xmin, xmax):
         self.ax.set_xlim(xmin, xmax)
 
@@ -150,23 +145,22 @@ class TPlot(object):
         if self.logy:
             xy[:,1] = np.log10(xy[:,1])
         
-        # if (self.logx and x.size==0) or (self.logy and y.size==0):
-        #     raise Exception('Data has no positive values, and therefore cannot be log-scaled')
-            
+        # transform to axes coordinates
         mapped = self.ax.transLimits.transform(xy)
-        # print('transformed =\n\tx\ty\txt\tyt\n', np.c_[xy, mapped])
         
+        # keep only the ones within the canvas
         x_in_range,y_in_range = np.logical_and(mapped>=0.0, mapped<=1.0).T
-
         idx, = np.nonzero(x_in_range & y_in_range)
-        
         mapped = mapped[idx]
+
+        # pixelate the results
         if kernel is None:
             mapped = np.round(mapped * [self.columns-1,self.lines-1])
         else:
             L,C = kernel.shape
             mapped = np.round(mapped * [C*(self.columns-1), L*(self.lines-1)])
         
+        # keep the unique pairs
         if mapped.size:
            mapped = np.unique(mapped, axis=0)
 
@@ -200,31 +194,34 @@ class TPlot(object):
         # add curves
         # -----------------------------
         for x,y,c,m,l,fill in self.datasets:
-
+            
             # ADD LINES
-            kernel = BRAILLE_KERNEL
-            L,C = kernel.shape
-            xi = np.linspace(0.0, 1.0, C*self.columns)
+            # ---------
+            if self.connect:
+                kernel = BRAILLE_KERNEL
+                L,C = kernel.shape
+                xi = np.linspace(0.0, 1.0, C*self.columns)
 
-            yi = np.ones_like(xi) * 0.5
-            pts = np.c_[xi,yi]
-            xi = self.ax.transLimits.inverted().transform(pts)[:,0]
-            xi = xi[np.logical_and(xi>=x.min(), xi<=x.max())]
-            yi = np.interp(xi, x, y)
+                yi = np.ones_like(xi) * 0.5
+                pts = np.c_[xi,yi]
+                xi = self.ax.transLimits.inverted().transform(pts)[:,0]
+                xi = xi[np.logical_and(xi>=x.min(), xi<=x.max())]
+                yi = np.interp(xi, x, y)
 
-            mapped,_ = self.transform(xi, yi, kernel=kernel)
+                mapped,_ = self.transform(xi, yi, kernel=kernel)
 
-            pixels = np.zeros((L*(self.lines), C*(self.columns)), dtype=int)
-            i,j = mapped.T
-            pixels[j,i] = 1
-            for i in range(0, C*self.columns, C):
-                for j in range(0, L*self.lines, L):
-                    mat = pixels[j:j+L, i:i+C]
-                    if np.any(mat):
-                        canvas[j//L][i//C] = c + to_dots(mat, kernel) + self._endc
+                pixels = np.zeros((L*(self.lines), C*(self.columns)), dtype=int)
+                i,j = mapped.T
+                pixels[j,i] = 1
+                for i in range(0, C*self.columns, C):
+                    for j in range(0, L*self.lines, L):
+                        mat = pixels[j:j+L, i:i+C]
+                        if np.any(mat):
+                            canvas[j//L][i//C] = c + to_dots(mat, kernel) + self._endc
             
             
             # ADD POINTS
+            # ----------
             kernel = KERNEL41
             L,C = kernel.shape
             mapped,_ = self.transform(x, y, kernel=kernel)
@@ -277,10 +274,6 @@ class TPlot(object):
         
         return canvas
     
-    def show_grid(self, show):
-        self.ax.grid(show)
-        self._grid = show
-    
     def set_xticks(self, ticks):
         self._xticks = ticks
 
@@ -329,10 +322,6 @@ class TPlot(object):
 
     def __str__(self):
         canvas = self.get_canvas()
-        # for line in canvas:
-        #     for n,c in enumerate(line):
-        #         if isinstance(c, unicode):
-        #             line[n] = c.encode('utf-8')
         return '\n' + '\n'.join((''.join(line) for line in canvas)) + '\n'
 
     def __repr__(self):
@@ -351,7 +340,8 @@ def run(args):
                 logx=args.logx,
                 logy=args.logy,
                 padding=args.padding,
-                use_colors=not args.no_color
+                use_colors=not args.no_color,
+                connect_points=args.lines
     )
     plot.show_grid(args.grid)
 
@@ -451,6 +441,7 @@ def main():
         metavar='H L?', help='histogram of column(s) H with optional label L', default=[])
     group.add_argument('--bins', type=int,
         metavar='N', help='number of bins', default=10)
+    group.add_argument('--lines', action='store_true', help='connect points using lines (requires sorted x-points')
 
     # parser> data parsing
     # ------------------------------------------- 
