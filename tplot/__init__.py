@@ -4,8 +4,19 @@ from __future__ import print_function
 import matplotlib.pyplot as plt
 from itertools import cycle
 import numpy as np
+import sys
 
-__version__ = '0.1.1'
+__version__ = '0.2.0'
+
+
+if sys.version_info[0] < 3:    
+    def to_dots(m, kernel):
+        # 10240 = int('2800', 16)
+        return unichr((kernel*m).sum()+10240).encode('utf-8')
+else:
+    def to_dots(m, kernel):
+        return chr((kernel*m).sum()+10240)
+
 
 class Colors:
 
@@ -77,15 +88,8 @@ SQUARE_MAP = {
    15: u'\u2588',
 }
 
-KERNEL = BRAILLE_KERNEL
 
-def to_dots(m):
-    # 10240 = int('2800', 16)
-    # return chr((KERNEL*m).sum()+10240)
-    # print (unichr((KERNEL*m).sum()+10240))
 
-    return unichr((KERNEL*m).sum()+10240).encode('utf-8')
-    # return SQUARE_MAP[(KERNEL*m).sum()].encode('utf-8')
 
 
 class TPlot(object):
@@ -210,7 +214,7 @@ class TPlot(object):
                 for j in range(0, L*self.lines, L):
                     mat = pixels[j:j+L, i:i+C]
                     if np.any(mat):
-                        canvas[j//L][i//C] = c + to_dots(mat) + self._endc
+                        canvas[j//L][i//C] = c + to_dots(mat, kernel) + self._endc
             
             
             # ADD POINTS
@@ -320,7 +324,7 @@ def run(args):
                 use_colors=not args.no_color
     )
     plot.show_grid(args.grid)
-    
+
     if not (args.c or args.xy or args.hist):
         for n,row in enumerate(data):
             plot.plot(row, label='col-%d'%n)
