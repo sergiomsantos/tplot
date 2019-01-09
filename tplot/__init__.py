@@ -8,6 +8,9 @@ import numpy as np
 __version__ = '0.1.1'
 
 class Colors:
+
+    _LYELLOW = '\033[33m'
+    _LGRAY = '\033[2m'
     _PURPLE = '\033[95m'
     _BLUE = '\033[94m'
     _GREEN = '\033[92m'
@@ -23,6 +26,64 @@ class Colors:
         if self.use_colors:
             return getattr(self, '_'+attr)
         return ''
+    
+# KERNEL42 = np.array([
+#     [  1,   8, 0, 0, 0],
+#     [  2,  16, 0, 0, 0],
+#     [  4,  32, 0, 0, 0],
+#     [ 64, 128, 0, 0, 0]
+#     ,[  0,   0, 0, 0, 0]
+#     ,[  0,   0, 0, 0, 0]
+#     ,[  0,   0, 0, 0, 0]
+#     ,[  0,   0, 0, 0, 0]
+# ])
+
+KERNEL42 = np.array([
+    [  1,   8],
+    [  2,  16],
+    [  4,  32],
+    [ 64, 128]
+])
+
+KERNEL22 = np.array([
+    [  1,   2],
+    [  4,   8]
+])
+
+KERNEL21 = np.array([
+    [ 1],
+    [ 2]
+])
+
+
+SQUARE_MAP = {
+    0: u'',
+    1: u'\u2598',
+    2: u'\u259D',
+    3: u'\u2580',
+    4: u'\u2596',
+    5: u'\u258C',
+    6: u'\u259E',
+    7: u'\u259B',
+    8: u'\u2597',
+    9: u'\u259A',
+   10: u'\u2590',
+   11: u'\u259C',
+   12: u'\u2584',
+   13: u'\u2599',
+   14: u'\u259F',
+   15: u'\u2588',
+}
+
+KERNEL = KERNEL42
+
+def to_dots(m):
+    # 10240 = int('2800', 16)
+    # return chr((KERNEL*m).sum()+10240)
+    # print (unichr((KERNEL*m).sum()+10240))
+
+    return unichr((KERNEL*m).sum()+10240).encode('utf-8')
+    # return SQUARE_MAP[(KERNEL*m).sum()].encode('utf-8')
 
 
 class TPlot(object):
@@ -74,7 +135,7 @@ class TPlot(object):
         self.ax.set_ylim(ymin, ymax)        
     
 
-    def transform(self, x, y):
+    def transform(self, x, y, kernel=None):
 
         if self.logx:
             x = np.log10(x[x>0])
@@ -89,7 +150,12 @@ class TPlot(object):
         idx, = np.nonzero(x_in_range & y_in_range)
         
         mapped = mapped[idx]
-        mapped = np.round(mapped * [self.columns-1,self.lines-1])
+        if kernel is None:
+            mapped = np.round(mapped * [self.columns-1,self.lines-1])
+        else:
+            L,C = kernel.shape
+            mapped = np.round(mapped * [C*(self.columns-1), L*(self.lines-1)])
+            # mapped = np.round(mapped * [C*self.columns-1, L*self.lines-1])
         
         if mapped.size:
            mapped = np.unique(mapped, axis=0)
@@ -103,17 +169,82 @@ class TPlot(object):
         
         canvas = [(self.columns)*[' '] for _ in range(self.lines)]
         
+        # add grid
+        # -----------------------------
+        colors = Colors(True)
+        c = colors.LGRAY
+
+        xticks = self.get_xticks()
+        yticks = self.get_yticks()
+        
+        for i,_ in xticks:
+            for line in canvas:
+                line[i] = c+'│'+self._endc
+        for i,_ in yticks:
+            canvas[i] = (self.columns)*[c+'─'+self._endc]
+        for i,_ in xticks:
+            for j,_ in yticks:
+                canvas[j][i] = c+'┼'+self._endc
+        
         # add curves
         # -----------------------------
-        for x,y,c,m,l,f in self.datasets:
-            mapped,_ = self.transform(x, y)
-            marker = c + m + self._endc
-            for i,j in mapped:
-                canvas[j][i] = marker
-                if f:
-                   for line in canvas[j:]:
-                       line[i] = marker
-        
+        for x,y,c,m,l,fill in self.datasets:
+            L,C = KERNEL42.shape
+            xi = np.linspace(0.0, 1.0, C*self.columns)
+            yi = np.ones_like(xi) * 0.5
+            pts = np.c_[xi,yi]
+            xi = self.ax.transLimits.inverted().transform(pts)[:,0]
+            yi = np.interp(xi, x, y)
+            mapped,_ = self.transform(xi, yi, kernel=KERNEL42)
+
+            L,C = KERNEL42.shape
+            tmp = np.zeros((L*(self.lines), C*(self.columns)), dtype=int)
+            i,j = mapped.T
+            tmp[j,i] = 1
+            print(tmp.shape, (self.lines, self.columns))
+            for i in range(0, C*self.columns, C):
+                for j in range(0, L*self.lines, L):
+                    # mat = tmp[j+1:j+L+1, i+1:i+C+1]
+                    mat = tmp[j:j+L, i:i+C]
+                    if np.any(mat):
+                        canvas[j//L][i//C] = c + to_dots(mat) + self._endc
+                        # print(i//C,j//L)
+
+                        # for line in canvas[j//L+1:]:
+                        #     line[i//C] = '█'
+            
+            
+            mapped,_ = self.transform(x, y, kernel=KERNEL21)
+            L,C = KERNEL21.shape
+            tmp = np.zeros((L*(self.lines), C*(self.columns)), dtype=int)
+            i,j = mapped.T
+            tmp[j,i] = 1
+
+            marker = c + ('█' if fill else m) + self._endc
+            
+            for i in range(0, C*self.columns, C):
+                for j in range(0, L*self.lines, L):
+                    mat = tmp[j:j+L, i:i+C]
+                    if np.any(mat):
+                        canvas[j//L][i//C] = marker
+
+                        if fill:
+                            for line in canvas[j//L+1:]:
+                                line[i//C] = marker
+
+            # mapped,_ = self.transform(x, y, pixelate=False)
+            # marker = c + ('█' if fill else m) + self._endc
+            # for i,j in mapped:
+            #     canvas[j][i] = marker
+            #     if fill:
+            #        for line in canvas[j:]:
+            #            line[i] = marker
+                
+
+            #mapped,_ = self.transform(np.array([1]), np.array([1]), pixelate=False)
+            # print('no-pixel:')
+            # print(mapped)
+
         # add legends
         # -----------------------------
         for n,dataset in enumerate(self.datasets):
@@ -126,26 +257,27 @@ class TPlot(object):
         # -----------------------------
         padding = self.padding*' '
         for n,line in enumerate(canvas):
-            line.insert(0, padding + '│')
-        canvas.append(len(line)*['─'])
+            line.insert(0, padding + '┃')
+        canvas.append(len(line)*['━'])
 
         # add y-ticks
         # -----------------------------
-        fmt = '%%%d.2e ┤' % (self.padding-1)
-        for i,label in self.get_yticks():
+        yticks = self.get_yticks()
+        fmt = '%%%d.2e ┨' % (self.padding-1)
+        for i,label in yticks:
             canvas[i][0] = fmt%label
          
         # add x-ticks
         # -----------------------------
-        xticks = self.get_xticks()
+        # xticks = self.get_xticks()
         fmt = '%%-%d.2e'%(xticks[1][0]-xticks[0][0])
 
         labels = ''
         for i,label in xticks:
-            canvas[-1][i] = '┬'
+            canvas[-1][i] = '┯'
             labels += fmt%label
 
-        canvas[-1].insert(0, padding + '└')
+        canvas[-1].insert(0, padding + '┗')
         canvas.append([padding[:-3] + xticks[0][0]*' ' + labels.rstrip()])
 
         # reset y-limits        
@@ -178,6 +310,10 @@ class TPlot(object):
 
     def __str__(self):
         canvas = self.get_canvas()
+        # for line in canvas:
+        #     for n,c in enumerate(line):
+        #         if isinstance(c, unicode):
+        #             line[n] = c.encode('utf-8')
         return '\n' + '\n'.join((''.join(line) for line in canvas)) + '\n'
 
     def __repr__(self):
@@ -250,6 +386,7 @@ def main():
         except:
             r,c = 24,80
         tsize = TSize(int(c), int(r))
+    print('TERMINAL SIZE =', tsize.lines, tsize.columns)
 
     def get_append_action(n):
         class CustomAppendAction(argparse._AppendAction):
