@@ -359,8 +359,9 @@ def run(args):
             l = 'hist-%d'%col
         limits = args.ax[-1] if args.ax else None
         hist, bin_edges = np.histogram(data[col], bins=args.bins, range=limits)
+        nonzero = hist > 0
         x = bin_edges[:-1] + bin_edges[1:]
-        plot.plot(0.5*x, hist, label=l, fill=True)
+        plot.plot(0.5*x[nonzero], hist[nonzero], label=l, fill=True)
         plot.set_xticks(bin_edges)
     
     for i,j,l in args.xy:
@@ -441,7 +442,9 @@ def main():
         metavar='H L?', help='histogram of column(s) H with optional label L', default=[])
     group.add_argument('--bins', type=int,
         metavar='N', help='number of bins', default=10)
-    group.add_argument('--lines', action='store_true', help='connect points using lines (requires sorted x-points')
+    group.add_argument('--lines', action='store_true',
+        help='requires that the x-coordinate sequence is increasing '+
+             'if the -xy option is specified')
 
     # parser> data parsing
     # ------------------------------------------- 
