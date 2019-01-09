@@ -252,7 +252,6 @@ class TPlot(object):
 
         # add y-ticks
         # -----------------------------
-        # yticks = self.get_yticks()
         fmt = '%%%d.2e ┨' % (self.padding-1)
         for i,label in yticks:
             canvas[i][0] = fmt%label
@@ -298,7 +297,7 @@ class TPlot(object):
         xc = max(xmin, xmax)-0.95*(xmax-xmin)
         # xc,_ = self.ax.transLimits.inverted().transform((0.95,0.95))
         pos, idx = self.transform(xc*np.ones_like(ticks), ticks)
-        return list(zip(pos[:,1], ticks[idx]))
+        return list(zip(pos[:,1], ticks[idx][::-1]))
 
     def __str__(self):
         canvas = self.get_canvas()
