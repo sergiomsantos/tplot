@@ -27,7 +27,7 @@ class Colors:
             return getattr(self, '_'+attr)
         return ''
     
-# KERNEL42 = np.array([
+# BRAILLE_KERNEL = np.array([
 #     [  1,   8, 0, 0, 0],
 #     [  2,  16, 0, 0, 0],
 #     [  4,  32, 0, 0, 0],
@@ -38,7 +38,7 @@ class Colors:
 #     ,[  0,   0, 0, 0, 0]
 # ])
 
-KERNEL42 = np.array([
+BRAILLE_KERNEL = np.array([
     [  1,   8],
     [  2,  16],
     [  4,  32],
@@ -50,9 +50,11 @@ KERNEL22 = np.array([
     [  4,   8]
 ])
 
-KERNEL21 = np.array([
+KERNEL41 = np.array([
     [ 1],
-    [ 2]
+    [ 2],
+    [ 4],
+    [ 8],
 ])
 
 
@@ -75,7 +77,7 @@ SQUARE_MAP = {
    15: u'\u2588',
 }
 
-KERNEL = KERNEL42
+KERNEL = BRAILLE_KERNEL
 
 def to_dots(m):
     # 10240 = int('2800', 16)
@@ -106,6 +108,7 @@ class TPlot(object):
             self.ax.set_yscale('log')
         
         self._xticks = None
+        self._grid = False
         
         colors = Colors(use_colors)
         self._colors = cycle([colors.BLUE, colors.GREEN, colors.RED, colors.PURPLE])
@@ -176,74 +179,54 @@ class TPlot(object):
 
         xticks = self.get_xticks()
         yticks = self.get_yticks()
-        
-        for i,_ in xticks:
-            for line in canvas:
-                line[i] = c+'│'+self._endc
-        for i,_ in yticks:
-            canvas[i] = (self.columns)*[c+'─'+self._endc]
-        for i,_ in xticks:
-            for j,_ in yticks:
-                canvas[j][i] = c+'┼'+self._endc
+        if self._grid:
+            for i,_ in xticks:
+                for line in canvas:
+                    line[i] = c+'│'+self._endc
+            for i,_ in yticks:
+                canvas[i] = (self.columns)*[c+'─'+self._endc]
+            for i,_ in xticks:
+                for j,_ in yticks:
+                    canvas[j][i] = c+'┼'+self._endc
         
         # add curves
         # -----------------------------
         for x,y,c,m,l,fill in self.datasets:
-            L,C = KERNEL42.shape
+
+            # ADD LINES
+            kernel = BRAILLE_KERNEL
+            L,C = kernel.shape
             xi = np.linspace(0.0, 1.0, C*self.columns)
             yi = np.ones_like(xi) * 0.5
             pts = np.c_[xi,yi]
             xi = self.ax.transLimits.inverted().transform(pts)[:,0]
             yi = np.interp(xi, x, y)
-            mapped,_ = self.transform(xi, yi, kernel=KERNEL42)
+            mapped,_ = self.transform(xi, yi, kernel=kernel)
 
-            L,C = KERNEL42.shape
-            tmp = np.zeros((L*(self.lines), C*(self.columns)), dtype=int)
+            pixels = np.zeros((L*(self.lines), C*(self.columns)), dtype=int)
             i,j = mapped.T
-            tmp[j,i] = 1
-            print(tmp.shape, (self.lines, self.columns))
+            pixels[j,i] = 1
             for i in range(0, C*self.columns, C):
                 for j in range(0, L*self.lines, L):
-                    # mat = tmp[j+1:j+L+1, i+1:i+C+1]
-                    mat = tmp[j:j+L, i:i+C]
+                    mat = pixels[j:j+L, i:i+C]
                     if np.any(mat):
                         canvas[j//L][i//C] = c + to_dots(mat) + self._endc
-                        # print(i//C,j//L)
-
-                        # for line in canvas[j//L+1:]:
-                        #     line[i//C] = '█'
             
             
-            mapped,_ = self.transform(x, y, kernel=KERNEL21)
-            L,C = KERNEL21.shape
-            tmp = np.zeros((L*(self.lines), C*(self.columns)), dtype=int)
-            i,j = mapped.T
-            tmp[j,i] = 1
-
+            # ADD POINTS
+            kernel = KERNEL41
+            L,C = kernel.shape
+            mapped,_ = self.transform(x, y, kernel=kernel)
+            
             marker = c + ('█' if fill else m) + self._endc
             
-            for i in range(0, C*self.columns, C):
-                for j in range(0, L*self.lines, L):
-                    mat = tmp[j:j+L, i:i+C]
-                    if np.any(mat):
-                        canvas[j//L][i//C] = marker
+            for i,j in mapped//[C,L]:
+                if fill:
+                    for line in canvas[j:]:
+                        line[i] = marker
+                else:
+                    canvas[j][i] = marker
 
-                        if fill:
-                            for line in canvas[j//L+1:]:
-                                line[i//C] = marker
-
-            # mapped,_ = self.transform(x, y, pixelate=False)
-            # marker = c + ('█' if fill else m) + self._endc
-            # for i,j in mapped:
-            #     canvas[j][i] = marker
-            #     if fill:
-            #        for line in canvas[j:]:
-            #            line[i] = marker
-                
-
-            #mapped,_ = self.transform(np.array([1]), np.array([1]), pixelate=False)
-            # print('no-pixel:')
-            # print(mapped)
 
         # add legends
         # -----------------------------
@@ -285,7 +268,9 @@ class TPlot(object):
         
         return canvas
     
-
+    def show_grid(self, show):
+        self._grid = show
+    
     def set_xticks(self, ticks):
         self._xticks = ticks
 
@@ -334,6 +319,7 @@ def run(args):
                 padding=args.padding,
                 use_colors=not args.no_color
     )
+    plot.show_grid(args.grid)
     
     if not (args.c or args.xy or args.hist):
         for n,row in enumerate(data):
@@ -451,6 +437,8 @@ def main():
         help='set log-scale on the x-axis')
     group.add_argument('--logy', action='store_true',
         help='set log-scale on the y-axis')
+    group.add_argument('--grid', action='store_true',
+        help='show grid')
 
     # parser> output configuration
     # ------------------------------------------- 
