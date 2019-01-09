@@ -201,10 +201,13 @@ class TPlot(object):
             kernel = BRAILLE_KERNEL
             L,C = kernel.shape
             xi = np.linspace(0.0, 1.0, C*self.columns)
+
             yi = np.ones_like(xi) * 0.5
             pts = np.c_[xi,yi]
             xi = self.ax.transLimits.inverted().transform(pts)[:,0]
+            xi = xi[np.logical_and(xi>=x.min(), xi<=x.max())]
             yi = np.interp(xi, x, y)
+
             mapped,_ = self.transform(xi, yi, kernel=kernel)
 
             pixels = np.zeros((L*(self.lines), C*(self.columns)), dtype=int)
@@ -249,7 +252,7 @@ class TPlot(object):
 
         # add y-ticks
         # -----------------------------
-        yticks = self.get_yticks()
+        # yticks = self.get_yticks()
         fmt = '%%%d.2e ┨' % (self.padding-1)
         for i,label in yticks:
             canvas[i][0] = fmt%label
