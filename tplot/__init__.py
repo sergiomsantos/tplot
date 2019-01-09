@@ -144,16 +144,36 @@ class TPlot(object):
 
     def transform(self, x, y, kernel=None):
 
+        xy = np.c_[x,y]
         if self.logx:
-            x = np.log10(x[x>0])
+            xy[:,0] = np.log10(xy[:,0])
         if self.logy:
-            y = np.log10(y[y>0])
+            xy[:,1] = np.log10(xy[:,1])
         
-        if (self.logx and x.size==0) or (self.logy and y.size==0):
-            raise Exception('Data has no positive values, and therefore cannot be log-scaled')
+        # if (self.logx and x.size==0) or (self.logy and y.size==0):
+        #     raise Exception('Data has no positive values, and therefore cannot be log-scaled')
             
-        mapped = self.ax.transLimits.transform(list(zip(x,y)))
+        # mapped = self.ax.transLimits.transform(list(zip(x,y)))
+        # print(self.ax.transData)
+        # print(self.ax.transAxes)
+        print(self.ax.transLimits)
+        mapped = self.ax.transLimits.transform(xy)
+        print(self.ax.get_ylim())
+        print('transformed =\n\tx\ty\txt\tyt\n', np.c_[xy, mapped])
+        
+        #tmp = np.c_[[0,0], np.log10(self.ax.get_ylim())]
+        #print('transformed =\n\tx\ty\txt\tyt\n', np.c_[tmp, self.ax.transLimits.transform(tmp)])
+
+
+        # y_threshold = np.inf if self.logy else 1.0
+        # x_threshold = np.inf if self.logx else 1.0
+
+        # xt,yt = mapped.T
+        # x_in_range = np.logical_and(xt >= 0.0, xt <= x_threshold)
+        # y_in_range = np.logical_and(yt >= y_threshold_min, yt <= y_threshold_max)
+
         x_in_range,y_in_range = np.logical_and(mapped>=0.0, mapped<=1.0).T
+
         idx, = np.nonzero(x_in_range & y_in_range)
         
         mapped = mapped[idx]
@@ -234,7 +254,6 @@ class TPlot(object):
                 else:
                     canvas[j][i] = marker
 
-
         # add legends
         # -----------------------------
         for n,dataset in enumerate(self.datasets):
@@ -269,12 +288,16 @@ class TPlot(object):
         canvas[-1].insert(0, padding + '┗')
         canvas.append([padding[:-3] + xticks[0][0]*' ' + labels.rstrip()])
 
+        self.get_yticks()
+        # self.get_xticks()
+
         # reset y-limits        
         self.ax.set_ylim(ylim)
         
         return canvas
     
     def show_grid(self, show):
+        self.ax.grid(show)
         self._grid = show
     
     def set_xticks(self, ticks):
@@ -285,19 +308,32 @@ class TPlot(object):
             ticks = self.ax.get_xticks()
         else:
             ticks = self._xticks
+        print('x',ticks)
         ymin,ymax = sorted(self.ax.get_ylim())
-        yc = max(ymin, ymax)-0.95*(ymax-ymin)
+        yc = max(ymin, ymax)-0.05*(ymax-ymin)
+        print('x',ymin,ymax,yc)
         # _,yc = self.ax.transLimits.inverted().transform((0.05,0.05))
         pos, idx = self.transform(ticks, yc*np.ones_like(ticks))
+        print('x',pos,idx)
+        print('x',list(zip(pos[:,1], ticks[idx][::-1])))
         return list(zip(pos[:,0], ticks[idx]))
     
     def get_yticks(self):
         ticks = self.ax.get_yticks()
+        
+        # print('y',ticks, type(ticks), self.ax.get_ylim())
+        ymin, ymax = sorted(self.ax.get_ylim())
+        ticks = ticks[np.logical_and(ticks>=ymin, ticks<=ymax)]
+        print('y', ticks, 'ylim=',self.ax.get_ylim())
+
         xmin,xmax = sorted(self.ax.get_xlim())
-        xc = max(xmin, xmax)-0.95*(xmax-xmin)
+        xc = max(xmin, xmax)-0.05*(xmax-xmin)
+        # print('y',xmin,xmax,xc)
         # xc,_ = self.ax.transLimits.inverted().transform((0.95,0.95))
         pos, idx = self.transform(xc*np.ones_like(ticks), ticks)
-        return list(zip(pos[:,1], ticks[idx][::-1]))
+        print('y',pos,idx)
+        print('y',list(zip(pos[:,1], ticks[idx])))
+        return list(zip(pos[:,1], ticks[idx]))
 
     def __str__(self):
         canvas = self.get_canvas()
