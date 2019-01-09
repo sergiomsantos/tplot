@@ -5,6 +5,8 @@ A Python package for creating and displaying matplotlib plots in the console/ter
 ## Index
 
 1. [Installation](#installation)
+   - [Requirements](#requirements)
+   - [Installation from source](#installation-from-source)
 2. [Help](#help)
 3. [Examples](#examples)
    - [Simple series plot](#simple-series-plot)
@@ -18,6 +20,13 @@ A Python package for creating and displaying matplotlib plots in the console/ter
    - [Output as a Matplotlib plot](#output-as-a-Matplotlib-plot)
 
 ## Installation
+
+### Requirements
+
+- Matplotlib > 2
+- Numpy > 1.15
+
+### Installation from source
 
 1. clone repository
 
