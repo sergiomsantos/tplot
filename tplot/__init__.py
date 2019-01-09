@@ -153,25 +153,9 @@ class TPlot(object):
         # if (self.logx and x.size==0) or (self.logy and y.size==0):
         #     raise Exception('Data has no positive values, and therefore cannot be log-scaled')
             
-        # mapped = self.ax.transLimits.transform(list(zip(x,y)))
-        # print(self.ax.transData)
-        # print(self.ax.transAxes)
-        print(self.ax.transLimits)
         mapped = self.ax.transLimits.transform(xy)
-        print(self.ax.get_ylim())
-        print('transformed =\n\tx\ty\txt\tyt\n', np.c_[xy, mapped])
+        # print('transformed =\n\tx\ty\txt\tyt\n', np.c_[xy, mapped])
         
-        #tmp = np.c_[[0,0], np.log10(self.ax.get_ylim())]
-        #print('transformed =\n\tx\ty\txt\tyt\n', np.c_[tmp, self.ax.transLimits.transform(tmp)])
-
-
-        # y_threshold = np.inf if self.logy else 1.0
-        # x_threshold = np.inf if self.logx else 1.0
-
-        # xt,yt = mapped.T
-        # x_in_range = np.logical_and(xt >= 0.0, xt <= x_threshold)
-        # y_in_range = np.logical_and(yt >= y_threshold_min, yt <= y_threshold_max)
-
         x_in_range,y_in_range = np.logical_and(mapped>=0.0, mapped<=1.0).T
 
         idx, = np.nonzero(x_in_range & y_in_range)
@@ -182,13 +166,13 @@ class TPlot(object):
         else:
             L,C = kernel.shape
             mapped = np.round(mapped * [C*(self.columns-1), L*(self.lines-1)])
-            # mapped = np.round(mapped * [C*self.columns-1, L*self.lines-1])
         
         if mapped.size:
            mapped = np.unique(mapped, axis=0)
 
         return mapped.astype(int), idx
     
+
     def get_canvas(self):
         
         ylim = self.ax.get_ylim()
@@ -271,26 +255,23 @@ class TPlot(object):
 
         # add y-ticks
         # -----------------------------
-        fmt = '%%%d.2e ┨' % (self.padding-1)
-        for i,label in yticks:
-            canvas[i][0] = fmt%label
+        if yticks:
+            fmt = '%%%d.2e ┨' % (self.padding-1)
+            for i,label in yticks:
+                canvas[i][0] = fmt%label
          
         # add x-ticks
         # -----------------------------
-        # xticks = self.get_xticks()
-        fmt = '%%-%d.2e'%(xticks[1][0]-xticks[0][0])
+        if xticks:
+            fmt = '%%-%d.2e'%(xticks[1][0]-xticks[0][0])
+            labels = ''
+            for i,label in xticks:
+                canvas[-1][i] = '┯'
+                labels += fmt%label
 
-        labels = ''
-        for i,label in xticks:
-            canvas[-1][i] = '┯'
-            labels += fmt%label
-
-        canvas[-1].insert(0, padding + '┗')
-        canvas.append([padding[:-3] + xticks[0][0]*' ' + labels.rstrip()])
-
-        self.get_yticks()
-        # self.get_xticks()
-
+            canvas[-1].insert(0, padding + '┗')
+            canvas.append([padding[:-3] + xticks[0][0]*' ' + labels.rstrip()])
+        
         # reset y-limits        
         self.ax.set_ylim(ylim)
         
@@ -304,36 +285,47 @@ class TPlot(object):
         self._xticks = ticks
 
     def get_xticks(self):
+        # if self._xticks is None:
+        #     ticks = self.ax.get_xticks()
+        # else:
+        #     ticks = self._xticks
+        # print('x',ticks)
+        # ymin,ymax = sorted(self.ax.get_ylim())
+        # yc = max(ymin, ymax)-0.05*(ymax-ymin)
+        # print('x',ymin,ymax,yc)
+        # # _,yc = self.ax.transLimits.inverted().transform((0.05,0.05))
+        # pos, idx = self.transform(ticks, yc*np.ones_like(ticks))
+        # print('x',pos,idx)
+        # print('x',list(zip(pos[:,1], ticks[idx][::-1])))
+        # return list(zip(pos[:,0], ticks[idx]))
+
+        # get ticks
         if self._xticks is None:
             ticks = self.ax.get_xticks()
         else:
             ticks = self._xticks
-        print('x',ticks)
-        ymin,ymax = sorted(self.ax.get_ylim())
-        yc = max(ymin, ymax)-0.05*(ymax-ymin)
-        print('x',ymin,ymax,yc)
-        # _,yc = self.ax.transLimits.inverted().transform((0.05,0.05))
-        pos, idx = self.transform(ticks, yc*np.ones_like(ticks))
-        print('x',pos,idx)
-        print('x',list(zip(pos[:,1], ticks[idx][::-1])))
-        return list(zip(pos[:,0], ticks[idx]))
-    
-    def get_yticks(self):
-        ticks = self.ax.get_yticks()
         
-        # print('y',ticks, type(ticks), self.ax.get_ylim())
-        ymin, ymax = sorted(self.ax.get_ylim())
-        ticks = ticks[np.logical_and(ticks>=ymin, ticks<=ymax)]
-        print('y', ticks, 'ylim=',self.ax.get_ylim())
+        # find center y-coordinate
+        yc = 0.5*np.sum(self.ax.get_ylim())
+        pos, idx = self.transform(ticks, yc*np.ones_like(ticks))
+        
+        return list(zip(pos[:,0], ticks[idx]))
 
-        xmin,xmax = sorted(self.ax.get_xlim())
-        xc = max(xmin, xmax)-0.05*(xmax-xmin)
-        # print('y',xmin,xmax,xc)
-        # xc,_ = self.ax.transLimits.inverted().transform((0.95,0.95))
+    def get_yticks(self):
+        
+        # problems with Log10Transform in earlier versions of MPL
+        # works with 2.2.3 and above
+
+        # reverse ordering due to differences in axes origin
+        # between MPL and Tplot
+        ticks = self.ax.get_yticks()[::-1]
+
+        # get the center x-coordinate
+        xc = 0.5*np.sum(self.ax.get_xlim())
         pos, idx = self.transform(xc*np.ones_like(ticks), ticks)
-        print('y',pos,idx)
-        print('y',list(zip(pos[:,1], ticks[idx])))
+        
         return list(zip(pos[:,1], ticks[idx]))
+
 
     def __str__(self):
         canvas = self.get_canvas()
