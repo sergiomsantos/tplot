@@ -273,8 +273,12 @@ class TPlot(object):
         # -----------------------------
         for n,dataset in enumerate(self.datasets):
             _,_,color,marker,label,_ = dataset
+            if self.connect:
+                label = '%s -%s-' % (label,marker)
+            else:
+                label = '%s %s' % (label,marker)
             k = len(label)
-            legend = Colors.format(label + ' ' + marker, color, Colors.UNDERLINE)
+            legend = Colors.format(label, color, Colors.UNDERLINE)
             canvas[n+1] = canvas[n+1][:-k-4] + [' ', legend]
         
         # add frame
