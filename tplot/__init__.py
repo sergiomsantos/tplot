@@ -13,26 +13,24 @@ __author__ = 'Sérgio Miguel Santos'
 __copyright__ = "Copyright 2019, Sérgio Miguel Santos, Univ. Aveiro - Portugal"
 
 
-# imports
-#   --- MPL ---
-import matplotlib
-matplotlib.use('Agg')   # must be called before importing pyplot
-import matplotlib.pyplot as plt
-
-#   --- NUMPY ---
-import numpy as np
-
-#   --- BUILTIN ---
 from itertools import cycle
 import sys
 import os
 
+IS_PY_VERSION_3 = sys.version_info[0] == 3
+MPL_DISABLED = 'TPLOT_NOGUI' in os.environ
+
+if MPL_DISABLED:
+    import matplotlib
+    matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 __all__ = ['Colors', 'TPlot', 'main', 'run']
 
 
-IS_PY_VERSION_3 = sys.version_info[0] == 3
 
 if IS_PY_VERSION_3:
     def to_braille(m, kernel):
@@ -151,7 +149,7 @@ class TPlot(object):
         if label is None:
             label = 'dataset-%d' % len(self.datasets)
         self.datasets.append((x,y,color,marker,label,fill))
-        self.ax.plot(x, y, (marker + '-') if self.connect else marker)
+        self.ax.plot(x, y, (marker + '-') if self.connect else marker, label=label)
 
 
     def show_grid(self, show):
@@ -415,7 +413,12 @@ def run(args):
     
     # and show output
     if args.mpl:
-        plt.show()
+        if MPL_DISABLED:
+            print('Matplotlib output is disabled!')
+            print(' > unset environment variable TPLOT_NOGUI and try again.')
+        else:
+            plt.legend()
+            plt.show()
     else:
         plot.show()
 
