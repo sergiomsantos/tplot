@@ -1,34 +1,51 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import print_function
+
+"""
+TPlot.py
+
+A Python package for creating and displaying matplotlib plots in the console/terminal
+"""
+
+__license__ = "MIT"
+__version__ = '0.2.3'
+__author__ = 'Sérgio Miguel Santos'
+__copyright__ = "Copyright 2019, Sérgio Miguel Santos, Univ. Aveiro - Portugal"
+
+
+# imports
+#   --- MPL ---
+import matplotlib
+matplotlib.use('Agg')   # must be called before importing pyplot
 import matplotlib.pyplot as plt
-from itertools import cycle
+
+#   --- NUMPY ---
 import numpy as np
+
+#   --- BUILTIN ---
+from itertools import cycle
 import sys
 import os
 
-import matplotlib
-matplotlib.use('Agg')
 
 
-__version__ = '0.2.1'
-
+__all__ = ['Colors', 'TPlot', 'main', 'run']
 
 
 IS_PY_VERSION_3 = sys.version_info[0] == 3
 
 if IS_PY_VERSION_3:
-    def to_dots(m, kernel):
+    def to_braille(m, kernel):
         # 10240 = int('2800', 16)
         return chr((kernel*m).sum()+10240)
 else:
-    def to_dots(m, kernel):
+    def to_braille(m, kernel):
         return unichr((kernel*m).sum()+10240).encode('utf-8')
+
 
 
 class Colors:
 
-    # reset
     RESET = '\033[0m'
     BOLD  = '\033[1m'
     ITALIC = '\033[3m'
@@ -68,8 +85,11 @@ class Colors:
     def as_list():
         if Colors._COLORS is None:
             Colors.load()
-        return Colors._COLORS.values()
-    
+        colors = [Colors._COLORS[s]
+                    for s in sorted(Colors._COLORS.keys())
+                    if s.startswith('COLOR')]
+        return colors
+        
     @staticmethod
     def format(s, *prefixes):
         if Colors.ENABLED:
@@ -82,11 +102,6 @@ BRAILLE_KERNEL = np.array([
     [  2,  16],
     [  4,  32],
     [ 64, 128]
-])
-
-KERNEL22 = np.array([
-    [  1,   2],
-    [  4,   8]
 ])
 
 KERNEL41 = np.array([
@@ -238,7 +253,7 @@ class TPlot(object):
                     for j in range(0, L*self.lines, L):
                         mat = pixels[j:j+L, i:i+C]
                         if np.any(mat):
-                            canvas[j//L][i//C] = Colors.format(to_dots(mat, kernel), c)
+                            canvas[j//L][i//C] = Colors.format(to_braille(mat, kernel), c)
             
             
             # ADD POINTS
