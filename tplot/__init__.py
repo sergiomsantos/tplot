@@ -7,8 +7,13 @@ import numpy as np
 import sys
 import os
 
+import matplotlib
+matplotlib.use('Agg')
+
 
 __version__ = '0.2.1'
+
+
 
 IS_PY_VERSION_3 = sys.version_info[0] == 3
 
