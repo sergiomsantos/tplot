@@ -1,3 +1,5 @@
 # Include the license file
 include LICENSE
 
+# include example files
+include resources/*
