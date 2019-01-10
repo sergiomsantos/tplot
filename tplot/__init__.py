@@ -314,21 +314,6 @@ class TPlot(object):
         self._xticks = ticks
 
     def get_xticks(self):
-        # if self._xticks is None:
-        #     ticks = self.ax.get_xticks()
-        # else:
-        #     ticks = self._xticks
-        # print('x',ticks)
-        # ymin,ymax = sorted(self.ax.get_ylim())
-        # yc = max(ymin, ymax)-0.05*(ymax-ymin)
-        # print('x',ymin,ymax,yc)
-        # # _,yc = self.ax.transLimits.inverted().transform((0.05,0.05))
-        # pos, idx = self.transform(ticks, yc*np.ones_like(ticks))
-        # print('x',pos,idx)
-        # print('x',list(zip(pos[:,1], ticks[idx][::-1])))
-        # return list(zip(pos[:,0], ticks[idx]))
-
-        # get ticks
         if self._xticks is None:
             ticks = self.ax.get_xticks()
         else:
@@ -362,10 +347,14 @@ class TPlot(object):
 
     def __repr__(self):
         return str(self)
+    
+    def show(self):
+        print(self)
 
 
 def run(args):
-    print(args)
+    
+    # load data
     data = np.loadtxt(
                 args.file,
                 skiprows=args.skip,
@@ -377,25 +366,31 @@ def run(args):
     else:
         data = data.T
     
+    # instantiate TPlot
     plot = TPlot(args.width, args.height,
                 logx=args.logx,
                 logy=args.logy,
                 padding=args.padding,
                 connect_points=args.lines
     )
-    
+
+    # configure output
     plot.show_grid(args.grid)
     Colors.ENABLED = args.no_color
 
+    # if no type is provided, simply plot all 
+    # columns as series
     if not (args.c or args.xy or args.hist):
         for n,row in enumerate(data):
             plot.plot(row, label='col-%d'%n)
 
+    # add series
     for col,l in args.c:
         if l is None:
             l = 'col-%d'%col
         plot.plot(data[col], label=l)
     
+    # add histograms
     for col,l in args.hist:
         if l is None:
             l = 'hist-%d'%col
@@ -406,20 +401,23 @@ def run(args):
         plot.plot(0.5*x[nonzero], hist[nonzero], label=l, fill=True)
         plot.set_xticks(bin_edges)
     
+    # add scatter plots
     for i,j,l in args.xy:
         if l is None:
             l = '%d-vs-%d'%(j,i)
         plot.plot(data[i], data[j], label=l)
     
+    # finally set axis limits
     if args.ax:
         plot.set_xlim(*args.ax[-1])
     if args.ay:
         plot.set_ylim(*args.ay[-1])
     
+    # and show output
     if args.mpl:
         plt.show()
     else:
-        print(plot)
+        plot.show()
 
 
 def get_output_size():
@@ -458,7 +456,7 @@ def main():
     import argparse
     
     tsize = get_output_size()
-    print('DAFAULT SIZE =', tsize.lines, tsize.columns)
+    print('DEFAULT SIZE =', tsize.lines, tsize.columns)
 
     def get_append_action(n):
         class CustomAppendAction(argparse._AppendAction):
@@ -554,6 +552,9 @@ def main():
     elif args.file == '-':
         args.file = sys.stdin
 
+    #import pprint
+    #pprint.pprint(vars(args), indent=4)
+    
     # do some work
     run(args)
 
