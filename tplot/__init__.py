@@ -170,8 +170,8 @@ class TPlot(object):
             mapped = np.round(mapped * [C*(self.columns-1), L*(self.lines-1)])
         
         # keep the unique pairs
-        #if mapped.size:
-        #   mapped = np.unique(mapped, axis=0)
+        if mapped.size:
+          mapped = np.unique(mapped, axis=0)
 
         return mapped.astype(int), idx
     
@@ -345,11 +345,12 @@ class TPlot(object):
 
 
 def run(args):
-
+    print(args)
     data = np.loadtxt(
                 args.file,
                 skiprows=args.skip,
-                delimiter=args.delimiter)
+                delimiter=args.delimiter,
+                comments=args.comment)
     
     if len(data.shape) == 1:
         data = data.reshape(1,-1)
@@ -493,6 +494,8 @@ def main():
         metavar='D', help='delimiter')
     group.add_argument('-s', '--skip', type=int, default=0,
         metavar='N', help='skip first N rows')
+    group.add_argument('--comment', type=str, default=None, nargs='*',
+        metavar='S', help='Characters used to indicate the start of a comment')
 
     # parser: axes configuration
     # ------------------------------------------- 
