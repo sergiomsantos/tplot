@@ -8,7 +8,7 @@ A Python package for creating and displaying matplotlib plots in the console/ter
 """
 
 __license__ = "MIT"
-__version__ = '0.3.1'
+__version__ = '0.4.0'
 __author__ = 'Sérgio Miguel Santos'
 __copyright__ = "Copyright 2019, Sérgio Miguel Santos, Univ. Aveiro - Portugal"
 
@@ -149,8 +149,8 @@ class TPlot(object):
             color = next(self._colors)
         if marker is None:
             marker = next(self._markers)
-        if label is None:
-            label = 'dataset-%d' % len(self.datasets)
+        #if label is None:
+        #    label = 'dataset-%d' % len(self.datasets)
         self.datasets.append((x,y,color,marker,label,fill))
         
         if marker=='?':
@@ -170,7 +170,7 @@ class TPlot(object):
         # y = np.zeros_like(x)
         self.plot(x, y,
                 marker='?',
-                label='percentiles',
+                # label='percentiles',
                 color=self.datasets[-1][2],
                 connect=True)
         # self.plot(x, y, marker='┼', label='percentiles')
@@ -256,7 +256,7 @@ class TPlot(object):
             
             # ADD LINES
             # ---------
-            if self.connect:
+            if self.connect and (m != '?'):
                 kernel = BRAILLE_KERNEL
                 L,C = kernel.shape
                 xi = np.linspace(0.0, 1.0, C*self.columns)
@@ -306,7 +306,7 @@ class TPlot(object):
 
         # add legends
         # -----------------------------
-        for n,dataset in enumerate(self.datasets):
+        for n,dataset in enumerate([d for d in self.datasets if d[-2]]):
             _,_,color,marker,label,_ = dataset
             if self.connect:
                 label = '%s -%s-' % (label,marker)
