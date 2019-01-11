@@ -353,6 +353,14 @@ class TPlot(object):
     def show(self):
         print(self)
 
+    def close(self):
+        plt.close(self.fig)
+    def hist(self, data, bins=10, range=None, label=None):
+        hist, bin_edges = np.histogram(data, bins=bins, range=range)
+        nonzero = hist > 0
+        x = bin_edges[:-1] + bin_edges[1:]
+        self.plot(0.5*x[nonzero], hist[nonzero], label=label, fill=True)
+        self.set_xticks(bin_edges)
 
 def run(args):
     
@@ -397,11 +405,13 @@ def run(args):
         if l is None:
             l = 'hist-%d'%col
         limits = args.ax[-1] if args.ax else None
-        hist, bin_edges = np.histogram(data[col], bins=args.bins, range=limits)
-        nonzero = hist > 0
-        x = bin_edges[:-1] + bin_edges[1:]
-        plot.plot(0.5*x[nonzero], hist[nonzero], label=l, fill=True)
-        plot.set_xticks(bin_edges)
+        plot.hist(data[col], bins=args.bins, range=limits, label=l)
+        #limits = args.ax[-1] if args.ax else None
+        #hist, bin_edges = np.histogram(data[col], bins=args.bins, range=limits)
+        #nonzero = hist > 0
+        #x = bin_edges[:-1] + bin_edges[1:]
+        #plot.plot(0.5*x[nonzero], hist[nonzero], label=l, fill=True)
+        #plot.set_xticks(bin_edges)
     
     # add scatter plots
     for i,j,l in args.xy:
