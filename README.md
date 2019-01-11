@@ -235,7 +235,7 @@ $ cat resources/fib.txt
 $ tplot -f resources/fib.txt --delimiter , --comment '#' '@' --grid -c 1 'column 2' --lines
 ```
 
-![dull image](resources/images/example9.png)
+![dull image](resources/images/example10.png)
 
 ### Supress colored output
 
