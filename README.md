@@ -1,4 +1,4 @@
-# TPlot
+# **TPlot**
 
 A Python package for creating and displaying matplotlib plots in the console/terminal.
 
@@ -7,6 +7,7 @@ A Python package for creating and displaying matplotlib plots in the console/ter
 1. [Installation](#installation)
    - [Requirements](#requirements)
    - [Installation from source](#installation-from-source)
+   - [Configuration](#configuration)
 2. [Help](#help)
 3. [Examples](#examples)
    - [Simple series plot](#simple-series-plot)
@@ -17,6 +18,7 @@ A Python package for creating and displaying matplotlib plots in the console/ter
    - [Histograms](#histograms)
    - [Series plot with log-scale on the y-axis](#series-plot-with-log-scale-on-the-y-axis)
    - [Supress colored output](#supress-colored-output)
+   - [Lines and Grid](#lines-and-grid)
    - [Output as a Matplotlib plot](#output-as-a-Matplotlib-plot)
 
 ## Installation
@@ -56,6 +58,34 @@ usage: tplot [-h] [--version] [-f FILE] [-c C L? [C L? ...]]
   [...]
 ```
 
+### Configuration
+
+**TPlot** is configurable through the use of the following environment variables, which can be
+defined in the shell configuration file (typically `.bashrc` or similar) to be used as default settings:
+
+- `TPLOT_NOGUI` - disables Matplotlib's windowed backend.
+When defined, the `--mpl`
+option will not produce any result (useful if working over an SSH connection without
+starting the X11 client). 
+- `TPLOT_SIZE` - default output size (ex. èxport)
+- `TPLOT_GRID` - ANSI escape code for coloring the grid (default is `'\033[2m'`)
+- `TPLOT_COLOR[1-6]` - ANSI escape code for coloring individual curves (default is `'\033[31m'`, ..., `'\033[36m'`)
+
+
+The following snippet can be used to configure **TPlot** in a BASH environment:
+
+```BASH
+export TPLOT_NOGUI=1            # disable Matplotlib output
+export TPLOT_SIZE='80,30'       # 80 columns x 30 lines
+export TPLOT_GRID='\033[2m'     # dark gray
+export TPLOT_COLOR1='\033[31m'  # red
+export TPLOT_COLOR2='\033[31m'  # green
+export TPLOT_COLOR3='\033[31m'  # yellow
+export TPLOT_COLOR4='\033[31m'  # blue
+export TPLOT_COLOR5='\033[31m'  # magenta
+export TPLOT_COLOR6='\033[31m'  # cyan
+```
+
 ## Help
 
 Help is available through the `-h` or `--help` flags:
@@ -64,8 +94,9 @@ Help is available through the `-h` or `--help` flags:
 $ tplot -h
 usage: tplot [-h] [--version] [-f FILE] [-c C L? [C L? ...]]
              [-xy X Y L? [X Y L? ...]] [--hist H L? [H L? ...]] [--bins N]
-             [-d D] [-s N] [-ax xmin xmax] [-ay ymin ymax] [--logx] [--logy]
-             [--width W] [--height H] [--padding P] [--mpl] [--no-color]
+             [--lines] [-d D] [-s N] [--comment [S [S ...]]] [-ax xmin xmax]
+             [-ay ymin ymax] [--logx] [--logy] [--grid] [--width W]
+             [--height H] [--padding P] [--mpl] [--no-color]
 
 A Python package for creating and displaying matplotlib plots in the
 console/terminal
@@ -88,6 +119,8 @@ Plot arguments:
 Data parsing:
   -d D, --delimiter D   delimiter
   -s N, --skip N        skip first N rows
+  --comment [S [S ...]]
+                        Characters used to indicate the start of a comment
 
 Axis configuration:
   -ax xmin xmax         x-axis limits
@@ -108,7 +141,7 @@ Output configuration:
 
 ### Simple series plot
 
-Request a series plot (`-c`) of column 3
+Request a series plot (`-c`) of column 3:
 
 ```console
 $ tplot -f resources/data.txt -c 3
@@ -129,7 +162,7 @@ $ tplot -f resources/data.txt -xy 0 1
 ### Multiple scatter plots
 
 Request multiple scatter plots (`-xy`) of columns 1 vs 0 and 2 vs 0,
-with the second set labelled as `5*cos(x)`
+with the second set labelled as `5*cos(x)`:
 
 ```console
 $ tplot -f resources/data.txt -xy 0 1 -xy 0 2 '5*cos(x)'
@@ -177,7 +210,7 @@ $ tplot -f resources/data.txt --hist 1 'an histogram' --bins=5 -ax -5 5
 
 ### Series plot with log-scale on the y-axis
 
-Request a series plot (`-c`) of column 3 ith a log-scaled y-axis (`--logy`)
+Request a series plot (`-c`) of column 3 ith a log-scaled y-axis (`--logy`):
 
 ```console
 $ tplot -f resources/data.txt -c 3 --logy
@@ -185,9 +218,28 @@ $ tplot -f resources/data.txt -c 3 --logy
 
 ![logy series image](resources/images/example7.png)
 
+### Lines and Grid
+
+Points connected by lines (`--lines`) and grid (`--grid`), with data taken
+from a comma delimited (`-d/--delimiter`), commented (`--comment`) file: 
+
+```console
+$ cat resources/fib.txt
+# this is a comment
+@ this is another
+1,1
+2,1
+[...]
+10,52
+
+$ tplot -f resources/fib.txt --delimiter , --comment '#' '@' --grid -c 1 'column 2' --lines
+```
+
+![dull image](resources/images/example9.png)
+
 ### Supress colored output
 
-Supress colored output (`--no-color`)
+Supress colored output (`--no-color`):
 
 ```console
 $ tplot -f resources/data.txt -c 2 --no-color
