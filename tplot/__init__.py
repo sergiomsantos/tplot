@@ -8,7 +8,7 @@ A Python package for creating and displaying matplotlib plots in the console/ter
 """
 
 __license__ = "MIT"
-__version__ = '0.2.4'
+__version__ = '0.3.0'
 __author__ = 'Sérgio Miguel Santos'
 __copyright__ = "Copyright 2019, Sérgio Miguel Santos, Univ. Aveiro - Portugal"
 
@@ -355,6 +355,13 @@ class TPlot(object):
 
     def close(self):
         plt.close(self.fig)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
     def hist(self, data, bins=10, range=None, label=None):
         hist, bin_edges = np.histogram(data, bins=bins, range=range)
         nonzero = hist > 0
