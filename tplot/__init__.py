@@ -8,7 +8,7 @@ A Python package for creating and displaying matplotlib plots in the console/ter
 """
 
 __license__ = "MIT"
-__version__ = '0.2.3'
+__version__ = '0.2.4'
 __author__ = 'Sérgio Miguel Santos'
 __copyright__ = "Copyright 2019, Sérgio Miguel Santos, Univ. Aveiro - Portugal"
 
