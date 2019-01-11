@@ -8,7 +8,7 @@ A Python package for creating and displaying matplotlib plots in the console/ter
 """
 
 __license__ = "MIT"
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 __author__ = 'Sérgio Miguel Santos'
 __copyright__ = "Copyright 2019, Sérgio Miguel Santos, Univ. Aveiro - Portugal"
 
@@ -136,6 +136,9 @@ class TPlot(object):
         
         self._colors  = cycle(Colors.as_list())
         self._markers = cycle('ox+.')
+
+        self.set_xtick_format('%9.2e')
+        self.set_ytick_format('%8d')
 
     
     def plot(self, x, y=None, color=None, marker=None, label=None, fill=False):
@@ -291,18 +294,25 @@ class TPlot(object):
         # add y-ticks
         # -----------------------------
         if yticks:
-            fmt = '%%%d.2e ┨' % (self.padding-1)
+            fmts = '%%%ss ┨' % (self.padding-1)
+            fmtn = self._ytick_fmt
+            #fmt = '%%%d.2e ┨' % (self.padding-1)
             for i,label in yticks:
-                canvas[i][0] = fmt%label
+                
+                canvas[i][0] = fmts % (fmtn%label)
+                #canvas[i][0] = fmt%label
          
         # add x-ticks
         # -----------------------------
         if xticks:
-            fmt = '%%-%d.2e'%(xticks[1][0]-xticks[0][0])
+            fmtn = self._xtick_fmt
+            fmts = '%%-%ss' % (xticks[1][0]-xticks[0][0])
+            #fmt = '%%-%d.2e'%(xticks[1][0]-xticks[0][0])
             labels = ''
             for i,label in xticks:
                 canvas[-1][i] = '┯'
-                labels += fmt%label
+                # labels += fmt%label
+                labels += fmts % (fmtn%label)
 
             canvas[-1].insert(0, padding + '┗')
             canvas.append([padding[:-3] + xticks[0][0]*' ' + labels.rstrip()])
@@ -311,7 +321,13 @@ class TPlot(object):
         self.ax.set_ylim(ylim)
         
         return canvas
+        
+    def set_xtick_format(self, fmt):
+        self._xtick_fmt = fmt
     
+    def set_ytick_format(self, fmt):
+        self._ytick_fmt = fmt
+
     def set_xticks(self, ticks):
         self._xticks = ticks
 
