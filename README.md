@@ -67,23 +67,24 @@ defined in the shell configuration file (typically `.bashrc` or similar) to be u
 When defined, the `--mpl`
 option will not produce any result (useful if working over an SSH connection without
 starting the X11 client). 
-- `TPLOT_SIZE` - default output size (ex. èxport)
-- `TPLOT_GRID` - ANSI escape code for coloring the grid (default is `'\033[2m'`)
-- `TPLOT_COLOR[1-6]` - ANSI escape code for coloring individual curves (default is `'\033[31m'`, ..., `'\033[36m'`)
+- `TPLOT_SIZE` - default output size.
+- `TPLOT_GRID` - ANSI escape code for coloring the grid.
+- `TPLOT_COLOR[1-6]` - ANSI escape code for coloring individual curves.
 
 
-The following snippet can be used to configure **TPlot** in a BASH environment:
+The following snippet (containing the default definitions)
+can be used to configure **TPlot** in a BASH environment:
 
 ```BASH
-export TPLOT_NOGUI=1            # disable Matplotlib output
-export TPLOT_SIZE='80,30'       # 80 columns x 30 lines
+#export TPLOT_NOGUI=1           # disable Matplotlib output
+export TPLOT_SIZE='80,24'       # 80 columns x 30 lines
 export TPLOT_GRID='\033[2m'     # dark gray
 export TPLOT_COLOR1='\033[31m'  # red
-export TPLOT_COLOR2='\033[31m'  # green
-export TPLOT_COLOR3='\033[31m'  # yellow
-export TPLOT_COLOR4='\033[31m'  # blue
-export TPLOT_COLOR5='\033[31m'  # magenta
-export TPLOT_COLOR6='\033[31m'  # cyan
+export TPLOT_COLOR2='\033[32m'  # green
+export TPLOT_COLOR3='\033[33m'  # yellow
+export TPLOT_COLOR4='\033[34m'  # blue
+export TPLOT_COLOR5='\033[35m'  # magenta
+export TPLOT_COLOR6='\033[36m'  # cyan
 ```
 
 ## Help
