@@ -53,12 +53,12 @@ class Colors:
     
     @staticmethod
     def load():
-        def get(n):
+        def get(name, default):
             # red, green, yellow, blue, magenta, cyan
             # change (30+n) to (90+n) for light-color variants
-            color = os.getenv('TPLOT_COLOR%d'%n, None)
+            color = os.getenv(name, None)
             if color is None:
-                color = '\033[%dm' % (30+n)
+                color = default
             else:
                 if IS_PY_VERSION_3:
                     color = bytes(color, 'utf-8').decode('unicode_escape')
@@ -67,11 +67,11 @@ class Colors:
             return color
         
         Colors._COLORS = {
-            'COLOR%d'%n: get(n) for n in range(1,7)
+            'COLOR%d'%n: get('TPLOT_COLOR%d'%n, '\033[%dm'%(30+n)) for n in range(1,7)
         }
         
         # light gray
-        Colors._COLORS['GRID'] = os.getenv('TPLOT_GRID', '\033[2m')
+        Colors._COLORS['GRID'] = get('TPLOT_GRID', '\033[2m')
         
     @staticmethod
     def get(name):
