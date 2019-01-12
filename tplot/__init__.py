@@ -12,7 +12,6 @@ __version__ = '0.4.0'
 __author__ = 'Sérgio Miguel Santos'
 __copyright__ = "Copyright 2019, Sérgio Miguel Santos, Univ. Aveiro - Portugal"
 
-
 from itertools import cycle
 import sys
 import os
@@ -20,7 +19,7 @@ import os
 IS_PY_VERSION_3 = sys.version_info[0] == 3
 MPL_DISABLED = 'TPLOT_NOGUI' in os.environ
 
-if MPL_DISABLED:
+if MPL_DISABLED or True:
     import matplotlib
     matplotlib.use('Agg')
 
@@ -29,7 +28,6 @@ import numpy as np
 
 
 __all__ = ['Colors', 'TPlot', 'main', 'run']
-
 
 
 if IS_PY_VERSION_3:
@@ -63,7 +61,8 @@ class Colors:
                 if IS_PY_VERSION_3:
                     color = bytes(color, 'utf-8').decode('unicode_escape')
                 else:
-                    color = color.decode('string_escape')
+                    # color = color.decode('string_escape')
+                    color = color.decode('unicode_escape')
             return color
         
         Colors._COLORS = {
@@ -110,10 +109,21 @@ KERNEL41 = np.array([
 ])
 
 
+class TPlotType(object):
+    LINE = 1
+    BAR = 2
+
+
+def get_unicode_array(size, fill=u''):
+    ar = np.empty(size, dtype='U32')
+    ar[:] = fill
+    return ar
+
 
 class TPlot(object):
     
-    def __init__(self, columns, lines, logx=False, logy=False, padding=10, connect_points=False):
+    def __init__(self, columns, lines, logx=False, logy=False, padding=10):
+
         self.columns = columns - padding - 5
         self.lines = lines - 5
         self.padding = padding
@@ -132,7 +142,6 @@ class TPlot(object):
         
         self._xticks = None
         self._grid = False
-        self.connect = connect_points
         
         self._colors  = cycle(Colors.as_list())
         self._markers = cycle('ox+.')
@@ -141,60 +150,91 @@ class TPlot(object):
         self.set_ytick_format('%8d')
 
     
-    def plot(self, x, y=None, color=None, marker=None, label=None, fill=False, connect=False):
+    def _get_dataset(self, x, y, **kwargs):
         if y is None:
             y = x
             x = np.arange(len(y))
-        if color is None:
-            color = next(self._colors)
-        if marker is None:
-            marker = next(self._markers)
-        #if label is None:
-        #    label = 'dataset-%d' % len(self.datasets)
-        self.datasets.append((x,y,color,marker,label,fill))
         
-        if marker=='?':
-            marker = next(self._markers)
+        dataset = dict(
+            x=x,
+            y=y,
+        )
         
-        self.ax.plot(x, y, (marker + '-') if (self.connect or connect) else marker, label=label)
+        if ('color' in kwargs) and (kwargs['color'] is None):
+            kwargs['color'] = next(self._colors)
+        
+        if ('marker' in kwargs) and (kwargs['marker'] is None):
+            kwargs['marker'] = next(self._markers)
+        
+        dataset.update(kwargs)
+        return dataset
 
-    def hist(self, data, bins=10, range=None, label=None):
-        hist, bin_edges = np.histogram(data, bins=bins, range=range)
+    def line(self, x, y=None, color=None, marker=None, label=None, connect=False):
+        dataset = self._get_dataset(
+            x, y,
+            fill=False,
+            label=label,
+            color=color,
+            marker=marker,
+            connect=connect,
+            type=TPlotType.LINE
+        )
+        self.datasets.append(dataset)
+        
+        if connect:
+            marker += '-'
+        
+        self.ax.plot(
+            dataset['x'],
+            dataset['y'],
+            dataset['marker'],
+            label=label)
+    
+    
+    def hist(self, y, bins=10, range=None, label=None, add_percentile=True):
+        hist, bin_edges = np.histogram(y, bins=bins, range=range)
+        x = np.diff(bin_edges)
         nonzero = hist > 0
-        x = bin_edges[:-1] + bin_edges[1:]
-        self.plot(0.5*x[nonzero], hist[nonzero], label=label, fill=True)
-        self.set_xticks(bin_edges)
+        
+        dataset = self._get_dataset(
+            x, y,
+            color=None,
+            label=label,
+            fill = True,
+            percentile = None,
+            type=TPlotType.BAR
+        )
 
-        x = np.percentile(data, [25, 50, 75])
-        y = np.ones_like(x) * hist[nonzero].max()/2
-        # y = np.zeros_like(x)
-        self.plot(x, y,
-                marker='?',
-                # label='percentiles',
-                color=self.datasets[-1][2],
-                connect=True)
-        # self.plot(x, y, marker='┼', label='percentiles')
-
-
+        if add_percentile:
+            dataset['percentile'] = np.percentile(y, [25, 50, 75])
+            
+        self.ax.bar(x, y, label=label)
+        # self.set_xticks(bin_edges)
+        
     def show_grid(self, show):
         self.ax.grid(show)
         self._grid = show
     
-    def set_xlim(self, xmin, xmax):
-        self.ax.set_xlim(xmin, xmax)
+    def _set_xlim(self, xlim):
+        self.ax.set_xlim(xlim)
+    def _get_xlim(self):
+        return self.ax.get_xlim()
+    xlim = property(_get_xlim, _set_xlim)
 
+    def _set_ylim(self, ylim):
+        self.ax.set_ylim(ylim)        
+    def _get_ylim(self):
+        return self.ax.get_ylim()
+    ylim = property(_get_ylim, _set_ylim)
 
-    def set_ylim(self, ymin, ymax):
-        self.ax.set_ylim(ymin, ymax)        
-    
 
     def transform(self, x, y, kernel=None):
 
-        xy = np.c_[x,y]
         if self.logx:
-            xy[:,0] = np.log10(xy[:,0])
+            x = np.log10(x)
         if self.logy:
-            xy[:,1] = np.log10(xy[:,1])
+            y = np.log10(y)
+        xy = np.c_[x,y]
         
         # transform to axes coordinates
         mapped = self.ax.transLimits.transform(xy)
@@ -220,36 +260,70 @@ class TPlot(object):
 
     def get_canvas(self):
         
-        ylim = self.ax.get_ylim()
-        self.ax.set_ylim(reversed(ylim))
+        ylim = self.ylim
+        self.ylim = reversed(ylim)
         
-        canvas = [(self.columns)*[' '] for _ in range(self.lines)]
+        # figure = np.empty((self.lines+1,self.columns+1), dtype='U16')
+        # figure = np.empty((self.lines+5,self.columns+10), dtype='U16')
+        # figure[:] = u' '
+
+        figure = get_unicode_array((self.lines+1,self.columns+1), u' ')
+
+        canvas = figure[:-1,1:]
+        
         headers = []
 
         # add grid
         # -----------------------------
-        color = Colors.get('GRID')
+        color = Colors.get('COLOR1')
 
-        xticks = self.get_xticks()
-        yticks = self.get_yticks()
+        xpos,xlabels = self.get_xticks()
+        ypos,ylabels = self.get_yticks()
+        
         if self._grid:
-            # vertical lines
-            s = Colors.format('│', color)
-            for i,_ in xticks:
-                for line in canvas:
-                    line[i] = s
             
             # horizontal lines
-            s = Colors.format('─', color)
-            for i,_ in yticks:
-                canvas[i] = (self.columns)*[s]
+            canvas[ypos,:] = Colors.format(u'─', color)
+            
+            # vertical lines
+            canvas[:,xpos] = Colors.format(u'│', color)
             
             # intersection points
-            s = Colors.format('┼', color)
-            for i,_ in xticks:
-                for j,_ in yticks:
-                    canvas[j][i] = s
+            xmarker = Colors.format(u'┼', color)
+            for i in ypos:
+                canvas[i,xpos] = xmarker
         
+        # add frame
+        # -----------------------------
+        
+        figure[-1,:] = u'━'
+        figure[ :,0] = u'┃'
+        figure[-1,0] = u'┗'
+        
+        
+        # add tick labels
+        # -----------------------------
+        figure[ypos, 0] = u'┨'      
+        lmargin = get_unicode_array(self.lines+1, u' ' * self.padding)
+        lmargin[ypos] = [u'%9.2e '%l for l in ylabels]
+
+        figure[-1,xpos+1] = u'┯'
+        xpos = xpos[::2]
+        xlabels = xlabels[::2]
+        fmts = ['%%-%d.2f'%n for n in np.diff(xpos)] + ['%-.2f']
+        bmargin = [fmt%l for fmt,l in zip(fmts, 13*xlabels)]
+        bmargin.insert(0, (self.padding+1+xpos[0]-2)* ' ')
+
+        for ds in self.datasets:
+            mapped,_ = self.transform(ds['x'], ds['y'], kernel=None)
+            for i,j in mapped:
+                canvas[j,i] = ds['marker']
+
+        return np.c_[lmargin, figure].tolist() + [bmargin]
+
+
+
+
         # add curves
         # -----------------------------
         for x,y,c,m,l,fill in self.datasets:
@@ -376,7 +450,8 @@ class TPlot(object):
         yc = 0.5*np.sum(self.ax.get_ylim())
         pos, idx = self.transform(ticks, yc*np.ones_like(ticks))
         
-        return list(zip(pos[:,0], ticks[idx]))
+        # return list(zip(pos[:,0], ticks[idx]))
+        return pos[:,0], ticks[idx]
 
     def get_yticks(self):
         
@@ -391,7 +466,8 @@ class TPlot(object):
         xc = 0.5*np.sum(self.ax.get_xlim())
         pos, idx = self.transform(xc*np.ones_like(ticks), ticks)
         
-        return list(zip(pos[:,1], ticks[idx]))
+        # return list(zip(pos[:,1], ticks[idx]))
+        return pos[:,1], ticks[idx]
 
 
     def __str__(self):
@@ -432,7 +508,7 @@ def run(args):
                 logx=args.logx,
                 logy=args.logy,
                 padding=args.padding,
-                connect_points=args.lines
+                # connect_points=args.lines
     )
 
     # configure output
@@ -443,13 +519,13 @@ def run(args):
     # columns as series
     if not (args.c or args.xy or args.hist):
         for n,row in enumerate(data):
-            plot.plot(row, label='col-%d'%n)
+            plot.line(row, label='col-%d'%n)
 
     # add series
     for col,l in args.c:
         if l is None:
             l = 'col-%d'%col
-        plot.plot(data[col], label=l)
+        plot.line(data[col], label=l)
     
     # add histograms
     for col,l in args.hist:
@@ -472,9 +548,9 @@ def run(args):
     
     # finally set axis limits
     if args.ax:
-        plot.set_xlim(*args.ax[-1])
+        plot.xlim = args.ax[-1]
     if args.ay:
-        plot.set_ylim(*args.ay[-1])
+        plot.ylim = args.ay[-1]
     
     # and show output
     if args.mpl:
