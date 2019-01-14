@@ -148,7 +148,13 @@ def get_unicode_array(size, fill=u''):
 
 class TPlot(object):
     
-    def __init__(self, columns, lines, logx=False, logy=False, padding=0):
+    def __init__(self, columns, lines,
+                logx=False, logy=False,
+                borders=Format.BOTTOM_LEFT,
+                tick_position=Format.BOTTOM_LEFT,
+                xtick_format='%r',
+                ytick_format='%r',
+                padding=0):
 
         self.size = (lines, columns)
         # self._columns = columns# - padding - 5
@@ -172,13 +178,11 @@ class TPlot(object):
         self._colors  = cycle(Colors.as_list())
         self._markers = cycle('ox+.')
 
-        self.set_xtick_format('%r')
-        self.set_ytick_format('%r')
-        # self.set_xtick_format('%9.2e')
-        # self.set_ytick_format('%8d')
-        self.set_border(Format.NONE)
+        self.set_tick_position(tick_position)
+        self.set_xtick_format(xtick_format)
+        self.set_ytick_format(ytick_format)
         self.set_padding(padding)
-        self.set_tick_position(Format.BOTTOM|Format.LEFT)
+        self.set_border(borders)
 
     def set_tick_position(self, position):
         self._tick_position = position
