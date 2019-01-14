@@ -150,8 +150,9 @@ class TPlot(object):
     
     def __init__(self, columns, lines, logx=False, logy=False, padding=10):
 
-        self.columns = columns# - padding - 5
-        self.lines = lines# - 5
+        self.size = (lines, columns)
+        # self._columns = columns# - padding - 5
+        # self._lines = lines# - 5
         self.datasets = []
         
         self.fig = plt.figure()
@@ -274,7 +275,7 @@ class TPlot(object):
     ylim = property(_get_ylim, _set_ylim)
 
 
-    def transform(self, x, y, kernel=None):
+    def transform(self, x, y, interpolation_ratio=None, unique=True):
 
         if self.logx:
             x = np.log10(x)
@@ -291,17 +292,21 @@ class TPlot(object):
         mapped = mapped[idx]
 
         # pixelate the results
-        if kernel is None:
-            mapped = np.round(mapped * [self.columns-1,self.lines-1])
-        else:
-            L,C = kernel.shape
-            mapped = np.round(mapped * [C*(self.columns-1), L*(self.lines-1)])
+        #if kernel is None:
+        #    mapped = np.round(mapped * [self._columns-1,self._lines-1])
+        #else:
+        #    L,C = kernel.shape
+        if interpolation_ratio is None:
+            interpolation_ratio = (1,1)
+
+        L,C = interpolation_ratio
+        mapped = np.round(mapped * [C*(self._columns-1), L*(self._lines-1)])
         
         mapped = mapped.astype(int)
         
         # keep the unique pairs
-        if mapped.size:
-          mapped = np.unique(mapped, axis=0)
+        if unique and mapped.size:
+         mapped = np.unique(mapped, axis=0)
 
         return mapped, idx
     
@@ -320,13 +325,13 @@ class TPlot(object):
         y_labels =  [(self._ytick_fmt%l).strip() for l in y_labels]
         
         # -1 line for spacing between label and tick
-        #columns = self.columns - max(map(len, y_labels)) - pl - pr - 1
+        #columns = self._columns - max(map(len, y_labels)) - pl - pr - 1
         
         # -1 line for x-labels
-        #lines = self.lines - pt - pb - 1
-        
-        columns = self.columns - pl - pr
-        lines = self.lines - pt - pb
+        #lines = self._lines - pt - pb - 1
+        l,c = self.size
+        lines = l - pt - pb - 1 # minus one for prompt
+        columns = c - pl - pr
         if (self._tick_position & Format.TOP) or (self._tick_position & Format.BOTTOM):
             lines -= 1
         
@@ -390,10 +395,10 @@ class TPlot(object):
                 x-labels    t
              padding-bottom
         '''
-        self.set_padding(0)
+        #self.set_padding(0)
         # self.set_border(Format.NONE|Format.BOTTOM|Format.LEFT)
-        self.set_border(Format.NONE)
-        self.set_tick_position(Format.BOTTOM_LEFT)
+        # self.set_border(Format.ALL)#BOTTOM_LEFT)
+        # self.set_tick_position(Format.BOTTOM_LEFT)
 
         ylim = self.ylim
         self.ylim = reversed(ylim)
@@ -404,8 +409,8 @@ class TPlot(object):
         canvas_lines, canvas_columns = canvas.shape
         lines, columns = figure.shape
 
-        self.columns = canvas_columns
-        self.lines = canvas_lines
+        self._columns = canvas_columns
+        self._lines = canvas_lines
 
         # canvas = figure[1:-1,1:-1]
 
@@ -490,15 +495,15 @@ class TPlot(object):
         
         self._add_curves(canvas)
 
-        # print(headers + np.c_[lmargin, figure, rmargin].tolist() + footers)
-        # print(canvas)
-        #print('\n'.join((''.join(line) for line in canvas)))
         
         figure = figure.tolist()
         lmargin = lmargin.tolist()
         rmargin = rmargin.tolist()
 
         self._add_legends(figure)
+
+        headers.extend((pt-len(headers))*[[]])
+        footers.extend((pb-len(footers))*[[]])
 
         output = headers + [[r]+line+[l] for r,line,l in zip(lmargin,figure,rmargin)] + footers
         # output = headers + np.c_[lmargin, figure, rmargin].tolist() + footers
@@ -532,16 +537,16 @@ class TPlot(object):
             if ds.get('connect', False):
                 
                 L,C = BRAILLE_KERNEL.shape
-                xi = np.linspace(0.0, 1.0, 10*C*self.columns)
+                xi = np.linspace(0.0, 1.0, 10*C*self._columns)
                 yi = np.ones_like(xi) * 0.5
                 pts = np.c_[xi,yi]
                 xi = self.ax.transLimits.inverted().transform(pts)[:,0]
                 xi = xi[np.logical_and(xi>=x.min(), xi<=x.max())]
                 yi = np.interp(xi, x, y)
 
-                mapped,_ = self.transform(xi, yi, kernel=BRAILLE_KERNEL)
-
-                pixels = np.zeros((L*(self.lines), C*(self.columns)), dtype=int)
+                mapped,_ = self.transform(xi, yi, BRAILLE_KERNEL.shape)
+                
+                pixels = np.zeros((L*(self._lines), C*(self._columns)), dtype=int)
                 i,j = mapped.T
                 pixels[j,i] = 1
                 tmp = convolve2d(pixels, BRAILLE_KERNEL, mode='valid')[::L,::C]
@@ -554,9 +559,8 @@ class TPlot(object):
                    canvas[i,j] = Colors.format(to_braille(tmp[i,j]), color)
 
             L,C = KERNEL41.shape
-            mapped,_ = self.transform(x, y, kernel=KERNEL41)
+            mapped,_ = self.transform(x, y, KERNEL41.shape)
             mapped = mapped//[C,L]
-            # mapped,_ = self.transform(x, y, kernel=None)
             
             if ds.get('fill', False):
                 for i,j in mapped:
@@ -569,7 +573,7 @@ class TPlot(object):
             if 'percentile' in ds:
                 xp = ds['percentile']
                 yp = min(self.ylim) * np.ones_like(xp)
-                mapped,_ = self.transform(xp, yp, kernel=None)
+                mapped,_ = self.transform(xp, yp)
                 i = mapped[:,0]
                 canvas[0,i.min():i.max()] = Colors.format(u'━', color)
                 canvas[0,mapped[:,0]] = Colors.format(u'╋', color)
@@ -595,7 +599,7 @@ class TPlot(object):
         
         # find center y-coordinate
         yc = 0.5*np.sum(self.ax.get_ylim())
-        pos, idx = self.transform(ticks, yc*np.ones_like(ticks))
+        pos, idx = self.transform(ticks, yc*np.ones_like(ticks), unique=False)
         
         # return list(zip(pos[:,0], ticks[idx]))
         return pos[:,0], ticks[idx]
@@ -611,7 +615,7 @@ class TPlot(object):
 
         # get the center x-coordinate
         xc = 0.5*np.sum(self.ax.get_xlim())
-        pos, idx = self.transform(xc*np.ones_like(ticks), ticks)
+        pos, idx = self.transform(xc*np.ones_like(ticks), ticks, unique=False)
         
         # return list(zip(pos[:,1], ticks[idx]))
         return pos[:,1], ticks[idx]
@@ -661,7 +665,15 @@ def run(args):
     )
 
     # configure output
+    
     plot.show_grid(args.grid)
+    plot.set_padding(*args.padding)
+    
+    plot.set_tick_position(getattr(Format, args.labels))
+    plot.set_border(getattr(Format, args.border))
+    plot.set_xtick_format(args.x_fmt)
+    plot.set_ytick_format(args.y_fmt)
+
     Colors.ENABLED = args.no_color
 
     # if no type is provided, simply plot all 
@@ -821,6 +833,12 @@ def main():
         help='set log-scale on the y-axis')
     group.add_argument('--grid', action='store_true',
         help='show grid')
+    
+    choices=[k for k in vars(Format).keys() if not k.startswith('_')]
+    group.add_argument('--border', choices=choices, default='BOTTOM_LEFT')
+    group.add_argument('--labels', choices=choices, default='BOTTOM_LEFT')
+    group.add_argument('--x-fmt', type=str, default='%r')
+    group.add_argument('--y-fmt', type=str, default='%r')
 
     # parser: output configuration
     # ------------------------------------------- 
@@ -829,8 +847,8 @@ def main():
         metavar='W', help='output width', default=tsize.columns)
     group.add_argument('--height', type=int,
         metavar='H', help='output height', default=tsize.lines)
-    group.add_argument('--padding', type=int,
-        metavar='P', help='left padding', default=10)
+    group.add_argument('--padding', type=int, nargs='+',
+        metavar='P', help='left padding', default=[2])
     group.add_argument('--mpl', action='store_true', help='show plot in matplotlib window')
     group.add_argument('--no-color', action='store_false', help='suppress colored output')
 
