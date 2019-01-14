@@ -31,13 +31,26 @@ __all__ = ['Colors', 'TPlot', 'main', 'run']
 
 
 if IS_PY_VERSION_3:
-    def to_braille(m, kernel):
+    # def to_braille(m, kernel):
+    #     # 10240 = int('2800', 16)
+    #     return chr((kernel*m).sum()+10240)
+    def to_braille(m):
         # 10240 = int('2800', 16)
-        return chr((kernel*m).sum()+10240)
+        return chr(m+10240)
 else:
-    def to_braille(m, kernel):
-        return unichr((kernel*m).sum()+10240).encode('utf-8')
+    # def to_braille(m, kernel):
+    #     return unichr((kernel*m).sum()+10240).encode('utf-8')
+    def to_braille(m):
+        return unichr(m+10240).encode('utf-8')
 
+try:
+    from scipy.signal import convolve2d
+except ImportError as ex:
+    def convolve2d(mat, kernel, **kwargs):
+        s = kernel.shape + tuple(np.subtract(mat.shape, kernel.shape) + 1)
+        strd = np.lib.stride_tricks.as_strided
+        subM = strd(mat, shape = s, strides = mat.strides * 2)
+        return np.einsum('ij,ijkl->kl', kernel, subM)
 
 
 class Colors:
@@ -60,6 +73,7 @@ class Colors:
             else:
                 if IS_PY_VERSION_3:
                     color = bytes(color, 'utf-8').decode('unicode_escape')
+                    # color = color.decode('unicode_escape')
                 else:
                     # color = color.decode('string_escape')
                     color = color.decode('unicode_escape')
@@ -113,6 +127,18 @@ class TPlotType(object):
     LINE = 1
     BAR = 2
 
+class BoxBorder:
+    NONE   = 0
+    LEFT   = 1
+    TOP    = 2
+    RIGHT  = 4
+    BOTTOM = 8
+    ALL    = 15
+    TOP_LEFT = 3
+    TOP_RIGHT = 6
+    BOTTOM_LEFT = 9
+    BOTTOM_RIGHT = 12
+
 
 def get_unicode_array(size, fill=u''):
     ar = np.empty(size, dtype='U32')
@@ -124,9 +150,8 @@ class TPlot(object):
     
     def __init__(self, columns, lines, logx=False, logy=False, padding=10):
 
-        self.columns = columns - padding - 5
-        self.lines = lines - 5
-        self.padding = padding
+        self.columns = columns# - padding - 5
+        self.lines = lines# - 5
         self.datasets = []
         
         self.fig = plt.figure()
@@ -148,8 +173,20 @@ class TPlot(object):
 
         self.set_xtick_format('%9.2e')
         self.set_ytick_format('%8d')
+        self.set_border(BoxBorder.NONE)
+        self.set_padding(padding)
 
-    
+    def set_padding(self, *padding):
+        count = len(padding)
+        if count == 1:
+            self.padding = 4*padding
+        elif count == 2:
+            self.padding = 2*padding
+        elif count == 4:
+            self.padding = padding
+        else:
+            raise ValueError('invalid number of arguments: expected 1, 2 or 4 and found %d'%count)
+        
     def _get_dataset(self, x, y, **kwargs):
         if y is None:
             y = x
@@ -181,6 +218,7 @@ class TPlot(object):
         )
         self.datasets.append(dataset)
         
+        marker = dataset['marker']
         if connect:
             marker += '-'
         
@@ -193,22 +231,25 @@ class TPlot(object):
     
     def hist(self, y, bins=10, range=None, label=None, add_percentile=True):
         hist, bin_edges = np.histogram(y, bins=bins, range=range)
-        x = np.diff(bin_edges)
+        x = 0.5*(bin_edges[1:] + bin_edges[:-1])
         nonzero = hist > 0
         
         dataset = self._get_dataset(
-            x, y,
+            x, hist,
             color=None,
             label=label,
             fill = True,
+            marker = u'█',
             percentile = None,
             type=TPlotType.BAR
         )
 
         if add_percentile:
             dataset['percentile'] = np.percentile(y, [25, 50, 75])
-            
-        self.ax.bar(x, y, label=label)
+        
+        self.datasets.append(dataset)
+        
+        self.ax.bar(x, hist, label=label)
         # self.set_xticks(bin_edges)
         
     def show_grid(self, show):
@@ -251,75 +292,331 @@ class TPlot(object):
             L,C = kernel.shape
             mapped = np.round(mapped * [C*(self.columns-1), L*(self.lines-1)])
         
+        mapped = mapped.astype(int)
+        
         # keep the unique pairs
         if mapped.size:
           mapped = np.unique(mapped, axis=0)
 
-        return mapped.astype(int), idx
+        return mapped, idx
     
 
-    def get_canvas(self):
+    def _get_figure(self):
+        print('padding:', self.padding)
+        pl,pt,pr,pb = self.padding
+
+        ylim_min, ylim_max = sorted(self.ylim)
+        
+        # get candidate tick labels
+        y_labels = self.ax.get_yticks()
+        # extract the ones that fit inside the y-limits
+        y_labels = y_labels[(y_labels>=ylim_min) & (y_labels<=ylim_max)]
+        # stringify the labels
+        y_labels =  [(self._ytick_fmt%l).strip() for l in y_labels]
+        
+        # -1 line for spacing between label and tick
+        columns = self.columns - max(map(len, y_labels)) - pl - pr - 1
+        
+        # -1 line for x-labels
+        lines = self.lines - pt - pb - 1
+        
+        figure = get_unicode_array((lines,columns), u' ')
+        
+        lf = cf = 0
+        lt = ct = None
+        
+        if self._borders & BoxBorder.TOP:
+            figure[0,:] = u'━'
+            lf = 1
+        if self._borders & BoxBorder.BOTTOM:
+            figure[-1,:] = u'━'
+            lt = -1
+        if self._borders & BoxBorder.LEFT:
+            figure[:,0] = u'┃'
+            cf = 1
+        if self._borders & BoxBorder.RIGHT:
+            figure[:,-1] = u'┃'
+            ct = -1
+        
+        if (self._borders & BoxBorder.TOP) and (self._borders & BoxBorder.LEFT):
+            figure[0,0] = u'┏'
+        if (self._borders & BoxBorder.TOP) and (self._borders & BoxBorder.RIGHT):
+            figure[0,-1] = u'┓'
+        if (self._borders & BoxBorder.BOTTOM) and (self._borders & BoxBorder.LEFT):
+            figure[-1,0] = u'┗'
+        if (self._borders & BoxBorder.BOTTOM) and (self._borders & BoxBorder.RIGHT):
+            figure[-1,-1] = u'┛'
+
+        canvas = figure[lf:lt, cf:ct]
+
+        return figure, canvas
+
+
+    def set_border(self, borders=BoxBorder.ALL):
+        self._borders = borders
+
+    def __str__(self):
+        
+        '''
+              padding-top
+        p   xxxxxxxxxxxxxxx p
+        a y x             x a
+        d l x             x d
+          a x             x
+        l b x             x r
+        e e x             x i
+        f l x             x g
+        t   xxxxxxxxxxxxxxx h
+                x-labels    t
+             padding-bottom
+        '''
+        self.set_padding(10)
+        self.set_border(BoxBorder.NONE|BoxBorder.BOTTOM|BoxBorder.LEFT)
         
         ylim = self.ylim
         self.ylim = reversed(ylim)
         
-        # figure = np.empty((self.lines+1,self.columns+1), dtype='U16')
-        # figure = np.empty((self.lines+5,self.columns+10), dtype='U16')
-        # figure[:] = u' '
+        # GET FIGURE AND CANVAS
+        # -----------------------------
+        figure, canvas = self._get_figure()
+        canvas_lines, canvas_columns = canvas.shape
+        lines, columns = figure.shape
 
-        figure = get_unicode_array((self.lines+1,self.columns+1), u' ')
+        self.columns = canvas_columns
+        self.lines = canvas_lines
 
-        canvas = figure[:-1,1:]
-        
-        headers = []
+        # canvas = figure[1:-1,1:-1]
 
         # add grid
         # -----------------------------
-        color = Colors.get('COLOR1')
+        color = Colors.get('GRID')
 
         xpos,xlabels = self.get_xticks()
         ypos,ylabels = self.get_yticks()
         
         if self._grid:
             
-            # horizontal lines
+            # horizontal thin lines
             canvas[ypos,:] = Colors.format(u'─', color)
             
-            # vertical lines
+            # vertical thin lines
             canvas[:,xpos] = Colors.format(u'│', color)
             
-            # intersection points
+            # intersection this crosses
             xmarker = Colors.format(u'┼', color)
             for i in ypos:
                 canvas[i,xpos] = xmarker
         
-        # add frame
-        # -----------------------------
-        
-        figure[-1,:] = u'━'
-        figure[ :,0] = u'┃'
-        figure[-1,0] = u'┗'
-        
-        
         # add tick labels
         # -----------------------------
-        figure[ypos, 0] = u'┨'      
-        lmargin = get_unicode_array(self.lines+1, u' ' * self.padding)
-        lmargin[ypos] = [u'%9.2e '%l for l in ylabels]
 
-        figure[-1,xpos+1] = u'┯'
-        xpos = xpos[::2]
-        xlabels = xlabels[::2]
-        fmts = ['%%-%d.2f'%n for n in np.diff(xpos)] + ['%-.2f']
-        bmargin = [fmt%l for fmt,l in zip(fmts, 13*xlabels)]
-        bmargin.insert(0, (self.padding+1+xpos[0]-2)* ' ')
+        pl,pt,pr,pb = self.padding
 
+        yticks_left = 1
+        xticks_top = 0
+
+        labels = [(self._ytick_fmt%l).strip() for l in ylabels]
+        if self._borders & BoxBorder.TOP:
+           ypos += 1 
+        
+        if yticks_left:
+            if self._borders & BoxBorder.LEFT:
+                figure[ypos, 0] = u'┨'
+            w = max(map(len, labels)) +  pl
+            fmt = '%%%ds '%w
+            lmargin = get_unicode_array(lines, u' '*(w+1))
+            lmargin[ypos] = [fmt%l for l in labels]
+
+            rmargin = get_unicode_array(lines)
+        else:
+            if self._borders & BoxBorder.RIGHT:
+                figure[ypos, -1] = u'┠'
+            w = pl
+            lmargin = get_unicode_array(lines, u' '*pl)
+            rmargin = get_unicode_array(lines)
+            rmargin[ypos] = [' %s'%l for l in labels]
+            
+        headers = []
+        footers = []
+
+        
+
+        
+        self.set_xtick_format('%.3f')
+
+        if self._borders & BoxBorder.LEFT:
+           xpos += 1
+        # fmts = ['%%-%d.2f'%n for n in np.diff(xpos)] + ['%-.2f']
+        labels = [(self._xtick_fmt%l).strip() for l in xlabels]
+        fmts = ['%%-%ds'%n for n in np.diff(xpos)] + ['%s']
+        footer = [fmt%l for fmt,l in zip(fmts, labels)]
+        footer.insert(0, (w+xpos[0]-2)* ' ')
+
+
+        if xticks_top:
+            if self._borders & BoxBorder.TOP:
+                figure[ 0,xpos] = u'┷'
+            headers.append(footer)
+        else:
+            if self._borders & BoxBorder.BOTTOM:
+                figure[-1,xpos] = u'┯'
+            footers.append(footer)
+        
+        self._add_curves(canvas)
+
+        # print(headers + np.c_[lmargin, figure, rmargin].tolist() + footers)
+        # print(canvas)
+        #print('\n'.join((''.join(line) for line in canvas)))
+        
+        figure = figure.tolist()
+        lmargin = lmargin.tolist()
+        rmargin = rmargin.tolist()
+
+        self._add_legends(figure)
+        self._add_legends(figure)
+
+        output = headers + [[r]+line+[l] for r,line,l in zip(lmargin,figure,rmargin)] + footers
+        # output = headers + np.c_[lmargin, figure, rmargin].tolist() + footers
+        s = '\n'.join((''.join(line) for line in output))
+        
+        if not IS_PY_VERSION_3:
+            s = s.encode('utf-8')
+        return s
+    
+    def _add_legends(self, figure):
+        datasets = [d for d in self.datasets if 'label' in d]
+        for n,dataset in enumerate(datasets):
+            label = '{label} {marker}'.format(**dataset)
+            k = len(label)
+            label = Colors.format(label, dataset['color'], Colors.UNDERLINE)
+            line = figure[n+2]
+            figure[n+2] = line[:-k-4] + [label] + line[-4:]
+    
+    def _add_curves(self, canvas):
         for ds in self.datasets:
-            mapped,_ = self.transform(ds['x'], ds['y'], kernel=None)
-            for i,j in mapped:
-                canvas[j,i] = ds['marker']
+            
+            x = ds['x']
+            y = ds['y']
+            color = ds.get('color', '')
 
-        return np.c_[lmargin, figure].tolist() + [bmargin]
+            if ds.get('connect', False):
+                
+                L,C = BRAILLE_KERNEL.shape
+                xi = np.linspace(0.0, 1.0, 10*C*self.columns)
+                yi = np.ones_like(xi) * 0.5
+                pts = np.c_[xi,yi]
+                xi = self.ax.transLimits.inverted().transform(pts)[:,0]
+                xi = xi[np.logical_and(xi>=x.min(), xi<=x.max())]
+                yi = np.interp(xi, x, y)
+
+                mapped,_ = self.transform(xi, yi, kernel=BRAILLE_KERNEL)
+
+                pixels = np.zeros((L*(self.lines), C*(self.columns)), dtype=int)
+                i,j = mapped.T
+                pixels[j,i] = 1
+                tmp = convolve2d(pixels, BRAILLE_KERNEL, mode='valid')[::L,::C]
+                
+                #f = np.vectorize(lambda n,c: Colors.format(to_braille(n), c))
+                #i,j=np.nonzero(tmp)
+                #canvas[i,j] = f(tmp[i,j], c)
+                
+                for i,j in zip(*np.nonzero(tmp)):
+                   canvas[i,j] = Colors.format(to_braille(tmp[i,j]), color)
+
+            L,C = KERNEL41.shape
+            mapped,_ = self.transform(x, y, kernel=KERNEL41)
+            mapped = mapped//[C,L]
+            # mapped,_ = self.transform(x, y, kernel=None)
+            
+            if ds.get('fill', False):
+                for i,j in mapped:
+                    canvas[j:,i] = Colors.format(ds['marker'], color)
+            
+            if ds.get('marker', None) is not None:
+                i,j = mapped.T
+                canvas[j,i] = Colors.format(ds['marker'], color)
+            
+            if 'percentile' in ds:
+                xp = ds['percentile']
+                yp = min(self.ylim) * np.ones_like(xp)
+                mapped,_ = self.transform(xp, yp, kernel=None)
+                i = mapped[:,0]
+                canvas[0,i.min():i.max()] = Colors.format(u'━', color)
+                canvas[0,mapped[:,0]] = Colors.format(u'╋', color)
+
+        return
+
+
+        # # figure = np.empty((self.lines+1,self.columns+1), dtype='U16')
+        # # figure = np.empty((self.lines+5,self.columns+10), dtype='U16')
+        # # figure[:] = u' '
+
+        # figure = get_unicode_array((self.lines+2,self.columns+2), u' ')
+
+        # canvas = figure[1:-1,1:-1]
+        
+        # headers = []
+
+        # # add grid
+        # # -----------------------------
+        # color = Colors.get('COLOR1')
+
+        # xpos,xlabels = self.get_xticks()
+        # ypos,ylabels = self.get_yticks()
+        
+        # if self._grid:
+            
+        #     # horizontal thin lines
+        #     canvas[ypos,:] = Colors.format(u'─', color)
+            
+        #     # vertical thin lines
+        #     canvas[:,xpos] = Colors.format(u'│', color)
+            
+        #     # intersection this crosses
+        #     xmarker = Colors.format(u'┼', color)
+        #     for i in ypos:
+        #         canvas[i,xpos] = xmarker
+        
+        # # add frame
+        # # -----------------------------
+        
+        # figure[[0,-1],:] = u'━'
+        # figure[ :,[0,-1]] = u'┃'
+        # # figure[-1,0] = u'┗',u'┓',u'┛',u'┏'
+        # figure[0,0] = u'┏'
+        # figure[0,-1] = u'┓'
+        # figure[-1,0] = u'┗'
+        # figure[-1,-1] = u'┛'
+        
+        
+        # # add tick labels
+        # # -----------------------------
+        # yticks_left = 1#True
+        # if yticks_left:
+        #     figure[ypos+1, 0] = u'┨'      
+        #     lmargin = get_unicode_array(self.lines+2, u' ' * self.padding)
+        #     lmargin[ypos+1] = [u'%9.2e '%l for l in ylabels]
+        #     rmargin = get_unicode_array(self.lines+2)
+        # else:
+        #     rmargin = get_unicode_array(self.lines+2)
+        #     rmargin[ypos+1] = [u'%9.2e '%l for l in ylabels]
+        #     lmargin = get_unicode_array(self.lines+2)
+        #     figure[ypos+1, -1] = u'┠'      
+            
+
+        # figure[-1,xpos+1] = u'┯'
+        # # xpos = xpos[::2]
+        # # xlabels = xlabels[::2]
+        # fmts = ['%%-%d.20f'%n for n in np.diff(xpos)] + ['%-.2f']
+        # bmargin = [fmt%l for fmt,l in zip(fmts, 13*xlabels)]
+        # bmargin.insert(0, (self.padding+1+xpos[0]-2)* ' ')
+
+        # for ds in self.datasets:
+        #     mapped,_ = self.transform(ds['x'], ds['y'], kernel=None)
+        #     for i,j in mapped:
+        #         canvas[j,i] = ds['marker']
+
+        # return np.c_[lmargin, figure, rmargin].tolist() + [bmargin]
 
 
 
@@ -470,9 +767,11 @@ class TPlot(object):
         return pos[:,1], ticks[idx]
 
 
-    def __str__(self):
-        canvas = self.get_canvas()
-        return '\n' + '\n'.join((''.join(line) for line in canvas)) + '\n'
+    # def __str__(self):
+    #     s = self.as_string()
+    #     if not IS_PY_VERSION_3:
+    #         s = s.encode('utf-8')
+    #     return s
 
     def __repr__(self):
         return str(self)
@@ -525,7 +824,7 @@ def run(args):
     for col,l in args.c:
         if l is None:
             l = 'col-%d'%col
-        plot.line(data[col], label=l)
+        plot.line(data[col], label=l, connect=args.lines)
     
     # add histograms
     for col,l in args.hist:
@@ -600,7 +899,7 @@ def main():
     import argparse
     
     tsize = get_output_size()
-    print('DEFAULT SIZE =', tsize.lines, tsize.columns)
+    #print('DEFAULT SIZE =', tsize.lines, tsize.columns)
 
     def get_append_action(n):
         class CustomAppendAction(argparse._AppendAction):
