@@ -172,8 +172,10 @@ class TPlot(object):
         self._colors  = cycle(Colors.as_list())
         self._markers = cycle('ox+.')
 
-        self.set_xtick_format('%9.2e')
-        self.set_ytick_format('%8d')
+        self.set_xtick_format('%r')
+        self.set_ytick_format('%r')
+        # self.set_xtick_format('%9.2e')
+        # self.set_ytick_format('%8d')
         self.set_border(Format.NONE)
         self.set_padding(padding)
         self.set_tick_position(Format.BOTTOM|Format.LEFT)
@@ -220,7 +222,7 @@ class TPlot(object):
             color=color,
             marker=marker,
             connect=connect,
-            type=TPlotType.LINE
+            #type=TPlotType.LINE
         )
         self.datasets.append(dataset)
         
@@ -234,28 +236,44 @@ class TPlot(object):
             dataset['marker'],
             label=label)
     
-    
-    def hist(self, y, bins=10, range=None, label=None, add_percentile=True):
+    def bar(self, x, y=None, label=None, color=None, fill=True, marker = u'█'):
+        dataset = self._get_dataset(
+            x, y,
+            color=color,
+            label=label,
+            fill = fill,
+            marker = u'█',
+            # percentile = None,
+            # type=TPlotType.BAR
+        )
+        self.datasets.append(dataset)
+
+        self.ax.bar(dataset['x'], dataset['y'], label=label)
+
+        return dataset
+
+    def hist(self, y, bins=10, range=None, label=None, add_percentile=True, marker = u'█'):
         hist, bin_edges = np.histogram(y, bins=bins, range=range)
         x = 0.5*(bin_edges[1:] + bin_edges[:-1])
-        nonzero = hist > 0
+        #nonzero = hist > 0
         
-        dataset = self._get_dataset(
-            x, hist,
-            color=None,
-            label=label,
-            fill = True,
-            marker = u'█',
-            percentile = None,
-            type=TPlotType.BAR
-        )
+        dataset = self.bar(x, hist, label=label, color=color, fill=True, marker=marker)
+        # dataset = self._get_dataset(
+        #     x, hist,
+        #     color=None,
+        #     label=label,
+        #     fill = True,
+        #     marker = u'█',
+        #     percentile = None,
+        #     #type=TPlotType.BAR
+        # )
 
         if add_percentile:
             dataset['percentile'] = np.percentile(y, [25, 50, 75])
         
-        self.datasets.append(dataset)
+        # self.datasets.append(dataset)
         
-        self.ax.bar(x, hist, label=label)
+        # self.ax.bar(x, hist, label=label)
         # self.set_xticks(bin_edges)
         
     def show_grid(self, show):
@@ -330,7 +348,7 @@ class TPlot(object):
         # -1 line for x-labels
         #lines = self._lines - pt - pb - 1
         l,c = self.size
-        lines = l - pt - pb - 1 # minus one for prompt
+        lines = l - pt - pb# - 1 # minus one for prompt
         columns = c - pl - pr
         if (self._tick_position & Format.TOP) or (self._tick_position & Format.BOTTOM):
             lines -= 1
@@ -373,7 +391,8 @@ class TPlot(object):
             figure[-1,-1] = u'┛'
 
         canvas = figure[lf:lt, cf:ct]
-
+        print('FIGURE =', figure.shape)
+        print('CANVAS =', canvas.shape)
         return figure, canvas
 
 
@@ -473,8 +492,7 @@ class TPlot(object):
         
 
         
-        self.set_xtick_format('%.3f')
-
+        
         if self._borders & Format.LEFT:
            xpos += 1
         # fmts = ['%%-%d.2f'%n for n in np.diff(xpos)] + ['%-.2f']
@@ -680,7 +698,7 @@ def run(args):
     # columns as series
     if not (args.c or args.xy or args.hist):
         for n,row in enumerate(data):
-            plot.line(row, label='col-%d'%n)
+            plot.bar(row, label='col-%d'%n)
 
     # add series
     for col,l in args.c:
@@ -761,7 +779,7 @@ def main():
     import argparse
     
     tsize = get_output_size()
-    #print('DEFAULT SIZE =', tsize.lines, tsize.columns)
+    print('DEFAULT SIZE =', tsize.lines, tsize.columns)
 
     def get_append_action(n):
         class CustomAppendAction(argparse._AppendAction):
