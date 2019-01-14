@@ -148,7 +148,7 @@ def get_unicode_array(size, fill=u''):
 
 class TPlot(object):
     
-    def __init__(self, columns, lines, logx=False, logy=False, padding=10):
+    def __init__(self, columns, lines, logx=False, logy=False, padding=0):
 
         self.size = (lines, columns)
         # self._columns = columns# - padding - 5
@@ -252,7 +252,9 @@ class TPlot(object):
 
         return dataset
 
-    def hist(self, y, bins=10, range=None, label=None, add_percentile=True, marker = u'█'):
+    def hist(self, y, bins=10,
+            range=None, label=None, add_percentile=True,
+            marker = u'█', color=None):
         hist, bin_edges = np.histogram(y, bins=bins, range=range)
         x = 0.5*(bin_edges[1:] + bin_edges[:-1])
         #nonzero = hist > 0
@@ -276,7 +278,7 @@ class TPlot(object):
         # self.ax.bar(x, hist, label=label)
         # self.set_xticks(bin_edges)
         
-    def show_grid(self, show):
+    def show_grid(self, show=True):
         self.ax.grid(show)
         self._grid = show
     
@@ -537,7 +539,7 @@ class TPlot(object):
     
 
     def _add_legends(self, figure):
-        datasets = [d for d in self.datasets if 'label' in d]
+        datasets = [d for d in self.datasets if d.get('label',None)]
         for n,dataset in enumerate(datasets):
             label = '{label} {marker}'.format(**dataset)
             k = len(label)
@@ -581,8 +583,14 @@ class TPlot(object):
             mapped = mapped//[C,L]
             
             if ds.get('fill', False):
+                zero,_ = self.transform(x[0], [0])
+                _,k = zero[0]
                 for i,j in mapped:
-                    canvas[j:,i] = Colors.format(ds['marker'], color)
+                    k = zero[0,1]
+                    if zero[0,1] > j:
+                     k += 1
+                    j,k = sorted((j,k))
+                    canvas[j:k,i] = Colors.format(ds['marker'], color)
             
             if ds.get('marker', None) is not None:
                 i,j = mapped.T
