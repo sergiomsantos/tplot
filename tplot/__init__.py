@@ -16,10 +16,10 @@ from itertools import cycle
 import sys
 import os
 
-IS_PY_VERSION_3 = sys.version_info[0] == 3
+IS_PYTHON3 = sys.version_info[0] == 3
 MPL_DISABLED = 'TPLOT_NOGUI' in os.environ
 
-if MPL_DISABLED or True:
+if MPL_DISABLED:
     import matplotlib
     matplotlib.use('Agg')
 
@@ -27,25 +27,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-__all__ = ['Colors', 'TPlot', 'main', 'run']
+__all__ = ['Colors', 'Format', 'TPlot', 'main', 'run']
 
 
-if IS_PY_VERSION_3:
-    # def to_braille(m, kernel):
-    #     # 10240 = int('2800', 16)
-    #     return chr((kernel*m).sum()+10240)
+if IS_PYTHON3:
     def to_braille(m):
         # 10240 = int('2800', 16)
         return chr(m+10240)
 else:
-    # def to_braille(m, kernel):
-    #     return unichr((kernel*m).sum()+10240).encode('utf-8')
     def to_braille(m):
         return unichr(m+10240).encode('utf-8')
 
 try:
     from scipy.signal import convolve2d
 except ImportError as ex:
+    # adapted from https://stackoverflow.com/a/43087771
     def convolve2d(mat, kernel, **kwargs):
         s = kernel.shape + tuple(np.subtract(mat.shape, kernel.shape) + 1)
         strd = np.lib.stride_tricks.as_strided
@@ -60,7 +56,7 @@ class Colors:
     ITALIC = '\033[3m'
     UNDERLINE = '\033[4m'
     _COLORS = None
-    ENABLED = True
+    _ENABLED = True
     
     @staticmethod
     def load():
@@ -71,7 +67,7 @@ class Colors:
             if color is None:
                 color = default
             else:
-                if IS_PY_VERSION_3:
+                if IS_PYTHON3:
                     color = bytes(color, 'utf-8').decode('unicode_escape')
                     # color = color.decode('unicode_escape')
                 else:
@@ -100,10 +96,18 @@ class Colors:
                     for s in sorted(Colors._COLORS.keys())
                     if s.startswith('COLOR')]
         return colors
-        
+    
+    @staticmethod
+    def disable():
+        Colors._ENABLED = False
+    
+    @staticmethod
+    def enable():
+        Colors._ENABLED = True
+    
     @staticmethod
     def format(s, *prefixes):
-        if Colors.ENABLED:
+        if Colors._ENABLED:
             return ''.join(prefixes) + s + Colors.RESET
         return s
 
@@ -122,10 +126,6 @@ KERNEL41 = np.array([
     [ 8],
 ])
 
-
-class TPlotType(object):
-    LINE = 1
-    BAR = 2
 
 class Format:
     NONE   = 0
@@ -154,7 +154,7 @@ class TPlot(object):
                 tick_position=Format.BOTTOM_LEFT,
                 xtick_format='%r',
                 ytick_format='%r',
-                padding=0):
+                padding=(0,)):
 
         self.size = (lines, columns)
         # self._columns = columns# - padding - 5
@@ -181,8 +181,9 @@ class TPlot(object):
         self.set_tick_position(tick_position)
         self.set_xtick_format(xtick_format)
         self.set_ytick_format(ytick_format)
-        self.set_padding(padding)
+        self.set_padding(*padding)
         self.set_border(borders)
+
 
     def set_tick_position(self, position):
         self._tick_position = position
@@ -197,9 +198,9 @@ class TPlot(object):
         elif count == 4:
             self.padding = padding
         else:
-            raise ValueError('invalid number of arguments: expected 1, 2 or 4 and found %d'%count)
+            raise ValueError('invalid number of arguments: expected 1, 2 or 4 but found %d'%count)
         
-    def _get_dataset(self, x, y, **kwargs):
+    def _build_dataset(self, x, y, **kwargs):
         if y is None:
             y = x
             x = np.arange(len(y))
@@ -219,14 +220,13 @@ class TPlot(object):
         return dataset
 
     def line(self, x, y=None, color=None, marker=None, label=None, connect=False):
-        dataset = self._get_dataset(
+        dataset = self._build_dataset(
             x, y,
             fill=False,
             label=label,
             color=color,
             marker=marker,
             connect=connect,
-            #type=TPlotType.LINE
         )
         self.datasets.append(dataset)
         
@@ -239,16 +239,18 @@ class TPlot(object):
             dataset['y'],
             dataset['marker'],
             label=label)
+
+        return dataset
     
+
     def bar(self, x, y=None, label=None, color=None, fill=True, marker = u'█'):
-        dataset = self._get_dataset(
+        
+        dataset = self._build_dataset(
             x, y,
+            fill=fill,
             color=color,
             label=label,
-            fill = fill,
-            marker = u'█',
-            # percentile = None,
-            # type=TPlotType.BAR
+            marker = marker,
         )
         self.datasets.append(dataset)
 
@@ -259,29 +261,20 @@ class TPlot(object):
     def hist(self, y, bins=10,
             range=None, label=None, add_percentile=True,
             marker = u'█', color=None):
-        hist, bin_edges = np.histogram(y, bins=bins, range=range)
-        x = 0.5*(bin_edges[1:] + bin_edges[:-1])
-        #nonzero = hist > 0
+        
+        hist, edges = np.histogram(y, bins=bins, range=range)
+        x = 0.5*(edges[1:] + edges[:-1])
         
         dataset = self.bar(x, hist, label=label, color=color, fill=True, marker=marker)
-        # dataset = self._get_dataset(
-        #     x, hist,
-        #     color=None,
-        #     label=label,
-        #     fill = True,
-        #     marker = u'█',
-        #     percentile = None,
-        #     #type=TPlotType.BAR
-        # )
 
         if add_percentile:
             dataset['percentile'] = np.percentile(y, [25, 50, 75])
         
         # self.datasets.append(dataset)
-        
         # self.ax.bar(x, hist, label=label)
         # self.set_xticks(bin_edges)
-        
+        return dataset
+
     def show_grid(self, show=True):
         self.ax.grid(show)
         self._grid = show
@@ -299,7 +292,7 @@ class TPlot(object):
     ylim = property(_get_ylim, _set_ylim)
 
 
-    def transform(self, x, y, interpolation_ratio=None, unique=True):
+    def transform(self, x, y, sub_sampling=None, unique=True):
 
         if self.logx:
             x = np.log10(x)
@@ -310,27 +303,22 @@ class TPlot(object):
         # transform to axes coordinates
         mapped = self.ax.transLimits.transform(xy)
         
-        # keep only the ones within the canvas
+        # keep only the ones inside the canvas
         x_in_range,y_in_range = np.logical_and(mapped>=0.0, mapped<=1.0).T
         idx, = np.nonzero(x_in_range & y_in_range)
         mapped = mapped[idx]
 
-        # pixelate the results
-        #if kernel is None:
-        #    mapped = np.round(mapped * [self._columns-1,self._lines-1])
-        #else:
-        #    L,C = kernel.shape
-        if interpolation_ratio is None:
-            interpolation_ratio = (1,1)
+        if sub_sampling is None:
+            sub_sampling = (1,1)
 
-        L,C = interpolation_ratio
+        L,C = sub_sampling
         mapped = np.round(mapped * [C*(self._columns-1), L*(self._lines-1)])
         
         mapped = mapped.astype(int)
         
         # keep the unique pairs
         if unique and mapped.size:
-         mapped = np.unique(mapped, axis=0)
+            mapped = np.unique(mapped, axis=0)
 
         return mapped, idx
     
@@ -397,8 +385,8 @@ class TPlot(object):
             figure[-1,-1] = u'┛'
 
         canvas = figure[lf:lt, cf:ct]
-        print('FIGURE =', figure.shape)
-        print('CANVAS =', canvas.shape)
+        #print('FIGURE =', figure.shape)
+        #print('CANVAS =', canvas.shape)
         return figure, canvas
 
 
@@ -480,7 +468,7 @@ class TPlot(object):
             lmargin = get_unicode_array(lines, u' '*(w+1))
             lmargin[ypos] = [fmt%l for l in labels]
 
-            rmargin = get_unicode_array(lines)
+            rmargin = get_unicode_array(lines, u' '*pr)
         elif self._tick_position & Format.RIGHT:
             if self._borders & Format.RIGHT:
                 figure[ypos, -1] = u'┠'
@@ -489,7 +477,8 @@ class TPlot(object):
             rmargin = get_unicode_array(lines)
             rmargin[ypos] = [' %s'%l for l in labels]
         else:
-            lmargin = rmargin = get_unicode_array(lines)
+            lmargin = get_unicode_array(lines, u' '*pl)
+            rmargin = get_unicode_array(lines, u' '*pr)
             
             
         headers = []
@@ -537,7 +526,7 @@ class TPlot(object):
         self.ax.set_ylim(ylim)
 
 
-        if not IS_PY_VERSION_3:
+        if not IS_PYTHON3:
             s = s.encode('utf-8')
         return s
     
@@ -653,7 +642,7 @@ class TPlot(object):
 
     # def __str__(self):
     #     s = self.as_string()
-    #     if not IS_PY_VERSION_3:
+    #     if not IS_PYTHON3:
     #         s = s.encode('utf-8')
     #     return s
 
@@ -671,6 +660,10 @@ class TPlot(object):
 
     def __exit__(self, *args):
         self.close()
+    
+    def clear(self):
+        self.ax.clear()
+        self.datasets = []
 
 def run(args):
     
@@ -704,7 +697,8 @@ def run(args):
     plot.set_xtick_format(args.x_fmt)
     plot.set_ytick_format(args.y_fmt)
 
-    Colors.ENABLED = args.no_color
+    if args.no_color:
+        Colors.disable()
 
     # if no type is provided, simply plot all 
     # columns as series
@@ -724,19 +718,14 @@ def run(args):
             l = 'hist-%d'%col
         limits = args.ax[-1] if args.ax else None
         plot.hist(data[col], bins=args.bins, range=limits, label=l)
-        #limits = args.ax[-1] if args.ax else None
-        #hist, bin_edges = np.histogram(data[col], bins=args.bins, range=limits)
-        #nonzero = hist > 0
-        #x = bin_edges[:-1] + bin_edges[1:]
-        #plot.plot(0.5*x[nonzero], hist[nonzero], label=l, fill=True)
-        #plot.set_xticks(bin_edges)
-    
+        
     # add scatter plots
     for i,j,l in args.xy:
         if l is None:
             l = '%d-vs-%d'%(j,i)
         plot.plot(data[i], data[j], label=l)
     
+
     # finally set axis limits
     if args.ax:
         plot.xlim = args.ax[-1]
