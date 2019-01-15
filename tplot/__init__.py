@@ -149,7 +149,7 @@ def get_unicode_array(size, fill=u''):
 class TPlot(object):
     
     def __init__(self, columns, lines,
-                logx=False, logy=False,
+                #logx=False, logy=False,
                 borders=Format.BOTTOM_LEFT,
                 tick_position=Format.BOTTOM_LEFT,
                 xtick_format='%r',
@@ -164,13 +164,13 @@ class TPlot(object):
         self.fig = plt.figure()
         self.ax  = self.fig.add_subplot(111)
 
-        self.logx = logx
-        if logx:
-            self.ax.set_xscale('log')
+        self.logx = False
+        #if logx:
+        #    self.ax.set_xscale('log')
         
-        self.logy = logy
-        if logy:
-            self.ax.set_yscale('log')
+        self.logy = False
+        #if logy:
+        #    self.ax.set_yscale('log')
         
         self._xticks = None
         self._grid = False
@@ -184,6 +184,18 @@ class TPlot(object):
         self.set_padding(*padding)
         self.set_border(borders)
 
+    def set_yscale(self, scale):
+        if not scale in ('linear', 'log'):
+            raise ValueError('Only "linear" and "log" scales are supported')
+        self.logy = scale=='log'
+        self.ax.set_yscale(scale)
+    
+    def set_xscale(self, scale):
+        if not scale in ('linear', 'log'):
+            raise ValueError('Only "linear" and "log" scales are supported')
+        self.logx = scale=='log'
+        self.ax.set_xscale(scale)
+    
 
     def set_tick_position(self, position):
         self._tick_position = position
@@ -576,14 +588,15 @@ class TPlot(object):
             mapped = mapped//[C,L]
             
             if ds.get('fill', False):
-                zero,_ = self.transform(x[0], [0])
-                _,k = zero[0]
+                #zero,_ = self.transform(x[0], [0])
+                #_,k = zero[0]
                 for i,j in mapped:
-                    k = zero[0,1]
-                    if zero[0,1] > j:
-                     k += 1
-                    j,k = sorted((j,k))
-                    canvas[j:k,i] = Colors.format(ds['marker'], color)
+                    # k = zero[0,1]
+                    # if zero[0,1] > j:
+                    #     k += 1
+                    # j,k = sorted((j,k))
+                    # canvas[j:k,i] = Colors.format(ds['marker'], color)
+                    canvas[j:,i] = Colors.format(ds['marker'], color)
             
             if ds.get('marker', None) is not None:
                 i,j = mapped.T
@@ -681,12 +694,17 @@ def run(args):
     
     # instantiate TPlot
     plot = TPlot(args.width, args.height,
-                logx=args.logx,
-                logy=args.logy,
+                #logx=args.logx,
+                #logy=args.logy,
                 padding=args.padding,
                 # connect_points=args.lines
     )
 
+    if args.logx:
+        plot.set_xscale('log')
+    if args.logy:
+        plot.set_yscale('log')
+    
     # configure output
     
     plot.show_grid(args.grid)
@@ -704,7 +722,7 @@ def run(args):
     # columns as series
     if not (args.c or args.xy or args.hist):
         for n,row in enumerate(data):
-            plot.bar(row, label='col-%d'%n)
+            plot.line(row, label='col-%d'%n)
 
     # add series
     for col,l in args.c:
@@ -869,7 +887,7 @@ def main():
     group.add_argument('--padding', type=int, nargs='+',
         metavar='P', help='left padding', default=[2])
     group.add_argument('--mpl', action='store_true', help='show plot in matplotlib window')
-    group.add_argument('--no-color', action='store_false', help='suppress colored output')
+    group.add_argument('--no-color', action='store_true', help='suppress colored output')
 
 
     # parser: run parser
