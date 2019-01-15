@@ -164,11 +164,11 @@ class TPlot(object):
         self.fig = plt.figure()
         self.ax  = self.fig.add_subplot(111)
 
-        self.logx = False
+        self._is_logx = False
         #if logx:
         #    self.ax.set_xscale('log')
         
-        self.logy = False
+        self._is_logy = False
         #if logy:
         #    self.ax.set_yscale('log')
         
@@ -183,17 +183,21 @@ class TPlot(object):
         self.set_ytick_format(ytick_format)
         self.set_padding(*padding)
         self.set_border(borders)
+    
+    def clear(self):
+        self.ax.clear()
+        self.datasets = []
 
     def set_yscale(self, scale):
         if not scale in ('linear', 'log'):
             raise ValueError('Only "linear" and "log" scales are supported')
-        self.logy = scale=='log'
+        self._is_logy = scale=='log'
         self.ax.set_yscale(scale)
     
     def set_xscale(self, scale):
         if not scale in ('linear', 'log'):
             raise ValueError('Only "linear" and "log" scales are supported')
-        self.logx = scale=='log'
+        self._is_logx = scale=='log'
         self.ax.set_xscale(scale)
     
 
@@ -306,9 +310,9 @@ class TPlot(object):
 
     def transform(self, x, y, sub_sampling=None, unique=True):
 
-        if self.logx:
+        if self._is_logx:
             x = np.log10(x)
-        if self.logy:
+        if self._is_logy:
             y = np.log10(y)
         xy = np.c_[x,y]
         
@@ -471,11 +475,12 @@ class TPlot(object):
         if self._borders & Format.TOP:
            ypos += 1 
         
-        w = 0
+        w = pl
         if self._tick_position & Format.LEFT:
             if self._borders & Format.LEFT:
                 figure[ypos, 0] = u'┨'
-            w = max(map(len, labels)) +  pl
+            # w = max(map(len, labels)) +  pl
+            w += max(map(len, labels))
             fmt = '%%%ds '%w
             lmargin = get_unicode_array(lines, u' '*(w+1))
             lmargin[ypos] = [fmt%l for l in labels]
@@ -484,11 +489,12 @@ class TPlot(object):
         elif self._tick_position & Format.RIGHT:
             if self._borders & Format.RIGHT:
                 figure[ypos, -1] = u'┠'
-            w = pl
+            # w = pl
             lmargin = get_unicode_array(lines, u' '*pl)
             rmargin = get_unicode_array(lines)
             rmargin[ypos] = [' %s'%l for l in labels]
         else:
+            # w = pl
             lmargin = get_unicode_array(lines, u' '*pl)
             rmargin = get_unicode_array(lines, u' '*pr)
             
@@ -501,14 +507,19 @@ class TPlot(object):
         
         
         if self._borders & Format.LEFT:
-           xpos += 1
+        #    xpos += 1
+           w += 1
+        if self._tick_position & Format.LEFT:
+            w += 1
+        
         # fmts = ['%%-%d.2f'%n for n in np.diff(xpos)] + ['%-.2f']
         labels = [(self._xtick_fmt%l).strip() for l in xlabels]
         fmts = ['%%-%ds'%n for n in np.diff(xpos)] + ['%s']
         footer = [fmt%l for fmt,l in zip(fmts, labels)]
-        footer.insert(0, (w+xpos[0]-2)* ' ')
+        # footer.insert(0, (w+xpos[0]-2)* ' ')
+        footer.insert(0, (xpos[0]-2)* ' ')
 
-
+        
         if self._tick_position & Format.BOTTOM:
             if self._borders & Format.BOTTOM:
                 figure[-1,xpos] = u'┯'
@@ -518,16 +529,19 @@ class TPlot(object):
                 figure[ 0,xpos] = u'┷'
             headers.append(footer)
         
-        self._add_curves(canvas)
+        self._add_curves(canvas, headers, footers)
 
-        
+        for item in headers+footers:
+           item.insert(0, w* ' ')
+
         figure = figure.tolist()
         lmargin = lmargin.tolist()
         rmargin = rmargin.tolist()
 
         self._add_legends(figure)
 
-        headers.extend((pt-len(headers))*[[]])
+        # headers.extend((pt-len(headers))*[[]])
+        headers = (pt-len(headers))*[[]] + headers
         footers.extend((pb-len(footers))*[[]])
 
         output = headers + [[r]+line+[l] for r,line,l in zip(lmargin,figure,rmargin)] + footers
@@ -552,7 +566,7 @@ class TPlot(object):
             line = figure[n+2]
             figure[n+2] = line[:-k-4] + [label] + line[-4:]
     
-    def _add_curves(self, canvas):
+    def _add_curves(self, canvas, headers, footers):
         for ds in self.datasets:
             
             x = ds['x']
@@ -606,9 +620,16 @@ class TPlot(object):
                 xp = ds['percentile']
                 yp = min(self.ylim) * np.ones_like(xp)
                 mapped,_ = self.transform(xp, yp)
+                
                 i = mapped[:,0]
                 canvas[0,i.min():i.max()] = Colors.format(u'━', color)
                 canvas[0,mapped[:,0]] = Colors.format(u'╋', color)
+                
+                s = u'╋'.join([''] + [u'━'*d for d in np.diff(mapped[:,0])-1] + [''])
+                item = Colors.format(i.min()*' '+ s, color)
+                footers.append([item])
+                headers.append([item])
+
 
 
 
@@ -674,9 +695,7 @@ class TPlot(object):
     def __exit__(self, *args):
         self.close()
     
-    def clear(self):
-        self.ax.clear()
-        self.datasets = []
+    
 
 def run(args):
     
