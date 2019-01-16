@@ -1,13 +1,22 @@
-from itertools import cycle
-from .constants import *
+# -*- coding: utf-8 -*-
+from __future__ import print_function
+
+from .ansi import Ansi
+from . import IS_PYTHON3
+
 import matplotlib.pyplot as plt
+from itertools import cycle
 import numpy as np
+
+__all__ = ['Format', 'TPlot']
 
 try:
     from scipy.signal import convolve2d
+
 except ImportError as ex:
-    # adapted from https://stackoverflow.com/a/43087771
+
     def convolve2d(mat, kernel, **kwargs):
+        # adapted from https://stackoverflow.com/a/43087771
         s = kernel.shape + tuple(np.subtract(mat.shape, kernel.shape) + 1)
         strd = np.lib.stride_tricks.as_strided
         subM = strd(mat, shape = s, strides = mat.strides * 2)
@@ -23,11 +32,40 @@ else:
         return unichr(m+10240).encode('utf-8')
 
 
+
+BRAILLE_KERNEL = np.array([
+    [  1,   8],
+    [  2,  16],
+    [  4,  32],
+    [ 64, 128]
+])
+
+
+KERNEL41 = np.array([
+    [ 1],
+    [ 2],
+    [ 4],
+    [ 8],
+])
+
+
 def get_unicode_array(size, fill=u''):
     ar = np.empty(size, dtype='U32')
     ar[:] = fill
     return ar
 
+
+class Format:
+    NONE   = 0
+    LEFT   = 1
+    TOP    = 2
+    RIGHT  = 4
+    BOTTOM = 8
+    ALL    = 15
+    TOP_LEFT = 3
+    TOP_RIGHT = 6
+    BOTTOM_LEFT = 9
+    BOTTOM_RIGHT = 12
 
 
 class TPlot(object):
@@ -40,26 +78,19 @@ class TPlot(object):
                 ytick_format='%r',
                 padding=(0,)):
 
-        self.size = (lines, columns)
-        # self._columns = columns# - padding - 5
-        # self._lines = lines# - 5
-        self.datasets = []
+        self._size = (lines, columns)
+        self._datasets = []
         
-        self.fig = plt.figure()
-        self.ax  = self.fig.add_subplot(111)
+        self._fig = plt.figure()
+        self._ax  = self._fig.add_subplot(111)
 
         self._is_logx = False
-        #if logx:
-        #    self.ax.set_xscale('log')
-        
         self._is_logy = False
-        #if logy:
-        #    self.ax.set_yscale('log')
         
         self._xticks = None
         self._grid = False
         
-        self._colors  = cycle(Colors.as_list())
+        self._colors  = cycle(Ansi.as_list())
         self._markers = cycle('ox+.')
 
         self.set_tick_position(tick_position)
@@ -69,20 +100,20 @@ class TPlot(object):
         self.set_border(borders)
     
     def clear(self):
-        self.ax.clear()
-        self.datasets = []
+        self._ax.clear()
+        self._datasets = []
 
     def set_yscale(self, scale):
         if not scale in ('linear', 'log'):
             raise ValueError('Only "linear" and "log" scales are supported')
         self._is_logy = scale=='log'
-        self.ax.set_yscale(scale)
+        self._ax.set_yscale(scale)
     
     def set_xscale(self, scale):
         if not scale in ('linear', 'log'):
             raise ValueError('Only "linear" and "log" scales are supported')
         self._is_logx = scale=='log'
-        self.ax.set_xscale(scale)
+        self._ax.set_xscale(scale)
     
 
     def set_tick_position(self, position):
@@ -90,16 +121,36 @@ class TPlot(object):
 
 
     def set_padding(self, *padding):
+        '''
+        Set spacing (number of spaces and lines) around the plot canvas.
+
+        ## **inputs**
+
+        The actual spacing around the canvas depends on the number
+        of values passed to the method:
+        
+        * single value - `top = bottom = left = right = padding`
+        * two values - `left = right = padding[0]`, `top = bottom = padding[1]`
+        * fours values - `left,top,right,bottom = padding`
+        
+        ```python
+        print(ola)
+        ```
+        
+        '''
         count = len(padding)
         if count == 1:
-            self.padding = 4*padding
+            self._padding = 4*padding
         elif count == 2:
-            self.padding = 2*padding
+            self._padding = 2*padding
         elif count == 4:
-            self.padding = padding
+            self._padding = padding
         else:
             raise ValueError('invalid number of arguments: expected 1, 2 or 4 but found %d'%count)
-        
+    
+    def get_padding(self):
+        return self._padding
+    
     def _build_dataset(self, x, y, **kwargs):
         if y is None:
             y = x
@@ -128,13 +179,13 @@ class TPlot(object):
             marker=marker,
             connect=connect,
         )
-        self.datasets.append(dataset)
+        self._datasets.append(dataset)
         
         marker = dataset['marker']
         if connect:
             marker += '-'
         
-        self.ax.plot(
+        self._ax.plot(
             dataset['x'],
             dataset['y'],
             dataset['marker'],
@@ -152,9 +203,9 @@ class TPlot(object):
             label=label,
             marker = marker,
         )
-        self.datasets.append(dataset)
+        self._datasets.append(dataset)
 
-        self.ax.bar(dataset['x'], dataset['y'], label=label)
+        self._ax.bar(dataset['x'], dataset['y'], label=label)
 
         return dataset
 
@@ -170,25 +221,25 @@ class TPlot(object):
         if add_percentile:
             dataset['percentile'] = np.percentile(y, [25, 50, 75])
         
-        # self.datasets.append(dataset)
-        # self.ax.bar(x, hist, label=label)
+        # self._datasets.append(dataset)
+        # self._ax.bar(x, hist, label=label)
         # self.set_xticks(bin_edges)
         return dataset
 
     def show_grid(self, show=True):
-        self.ax.grid(show)
+        self._ax.grid(show)
         self._grid = show
     
     def _set_xlim(self, xlim):
-        self.ax.set_xlim(xlim)
+        self._ax.set_xlim(xlim)
     def _get_xlim(self):
-        return self.ax.get_xlim()
+        return self._ax.get_xlim()
     xlim = property(_get_xlim, _set_xlim)
 
     def _set_ylim(self, ylim):
-        self.ax.set_ylim(ylim)        
+        self._ax.set_ylim(ylim)        
     def _get_ylim(self):
-        return self.ax.get_ylim()
+        return self._ax.get_ylim()
     ylim = property(_get_ylim, _set_ylim)
 
 
@@ -201,7 +252,7 @@ class TPlot(object):
         xy = np.c_[x,y]
         
         # transform to axes coordinates
-        mapped = self.ax.transLimits.transform(xy)
+        mapped = self._ax.transLimits.transform(xy)
         
         # keep only the ones inside the canvas
         x_in_range,y_in_range = np.logical_and(mapped>=0.0, mapped<=1.0).T
@@ -225,12 +276,12 @@ class TPlot(object):
 
     def _get_figure(self):
         
-        pl,pt,pr,pb = self.padding
+        pl,pt,pr,pb = self._padding
 
         ylim_min, ylim_max = sorted(self.ylim)
         
         # get candidate tick labels
-        y_labels = self.ax.get_yticks()
+        y_labels = self._ax.get_yticks()
         # extract the ones that fit inside the y-limits
         y_labels = y_labels[(y_labels>=ylim_min) & (y_labels<=ylim_max)]
         # stringify the labels
@@ -241,7 +292,7 @@ class TPlot(object):
         
         # -1 line for x-labels
         #lines = self._lines - pt - pb - 1
-        l,c = self.size
+        l,c = self._size
         lines = l - pt - pb# - 1 # minus one for prompt
         columns = c - pl - pr
         if (self._tick_position & Format.TOP) or (self._tick_position & Format.BOTTOM):
@@ -249,7 +300,7 @@ class TPlot(object):
         
         if (self._tick_position & Format.LEFT) or (self._tick_position & Format.RIGHT):
             # get candidate tick labels
-            y_labels = self.ax.get_yticks()
+            y_labels = self._ax.get_yticks()
             # extract the ones that fit inside the y-limits
             y_labels = y_labels[(y_labels>=ylim_min) & (y_labels<=ylim_max)]
             # stringify the labels
@@ -329,7 +380,7 @@ class TPlot(object):
 
         # add grid
         # -----------------------------
-        color = Colors.get('GRID')
+        color = Ansi.get('GRID')
 
         xpos,xlabels = self.get_xticks()
         ypos,ylabels = self.get_yticks()
@@ -337,20 +388,20 @@ class TPlot(object):
         if self._grid:
             
             # horizontal thin lines
-            canvas[ypos,:] = Colors.format(u'─', color)
+            canvas[ypos,:] = Ansi.format(u'─', color)
             
             # vertical thin lines
-            canvas[:,xpos] = Colors.format(u'│', color)
+            canvas[:,xpos] = Ansi.format(u'│', color)
             
             # intersection this crosses
-            xmarker = Colors.format(u'┼', color)
+            xmarker = Ansi.format(u'┼', color)
             for i in ypos:
                 canvas[i,xpos] = xmarker
         
         # add tick labels
         # -----------------------------
 
-        pl,pt,pr,pb = self.padding
+        pl,pt,pr,pb = self._padding
 
         yticks_left = 1
         xticks_top = 0
@@ -391,8 +442,8 @@ class TPlot(object):
         
         
         if self._borders & Format.LEFT:
-        #    xpos += 1
-           w += 1
+            xpos += 1
+            w += 1
         if self._tick_position & Format.LEFT:
             w += 1
         
@@ -416,7 +467,7 @@ class TPlot(object):
         self._add_curves(canvas, headers, footers)
 
         for item in headers+footers:
-           item.insert(0, w* ' ')
+           item.insert(0, w*' ')
 
         figure = figure.tolist()
         lmargin = lmargin.tolist()
@@ -433,7 +484,7 @@ class TPlot(object):
         s = '\n'.join((''.join(line) for line in output))
         
         # reset y-limits        
-        self.ax.set_ylim(ylim)
+        self._ax.set_ylim(ylim)
 
 
         if not IS_PYTHON3:
@@ -442,16 +493,16 @@ class TPlot(object):
     
 
     def _add_legends(self, figure):
-        datasets = [d for d in self.datasets if d.get('label',None)]
+        datasets = [d for d in self._datasets if d.get('label',None)]
         for n,dataset in enumerate(datasets):
             label = '{label} {marker}'.format(**dataset)
             k = len(label)
-            label = Colors.format(label, dataset['color'], Colors.UNDERLINE)
+            label = Ansi.format(label, dataset['color'], Ansi.UNDERLINE)
             line = figure[n+2]
             figure[n+2] = line[:-k-4] + [label] + line[-4:]
     
     def _add_curves(self, canvas, headers, footers):
-        for ds in self.datasets:
+        for ds in self._datasets:
             
             x = ds['x']
             y = ds['y']
@@ -463,7 +514,7 @@ class TPlot(object):
                 xi = np.linspace(0.0, 1.0, 10*C*self._columns)
                 yi = np.ones_like(xi) * 0.5
                 pts = np.c_[xi,yi]
-                xi = self.ax.transLimits.inverted().transform(pts)[:,0]
+                xi = self._ax.transLimits.inverted().transform(pts)[:,0]
                 xi = xi[np.logical_and(xi>=x.min(), xi<=x.max())]
                 yi = np.interp(xi, x, y)
 
@@ -474,12 +525,12 @@ class TPlot(object):
                 pixels[j,i] = 1
                 tmp = convolve2d(pixels, BRAILLE_KERNEL, mode='valid')[::L,::C]
                 
-                #f = np.vectorize(lambda n,c: Colors.format(to_braille(n), c))
+                #f = np.vectorize(lambda n,c: Ansi.format(to_braille(n), c))
                 #i,j=np.nonzero(tmp)
                 #canvas[i,j] = f(tmp[i,j], c)
                 
                 for i,j in zip(*np.nonzero(tmp)):
-                   canvas[i,j] = Colors.format(to_braille(tmp[i,j]), color)
+                   canvas[i,j] = Ansi.format(to_braille(tmp[i,j]), color)
 
             L,C = KERNEL41.shape
             mapped,_ = self.transform(x, y, KERNEL41.shape)
@@ -493,12 +544,12 @@ class TPlot(object):
                     # if zero[0,1] > j:
                     #     k += 1
                     # j,k = sorted((j,k))
-                    # canvas[j:k,i] = Colors.format(ds['marker'], color)
-                    canvas[j:,i] = Colors.format(ds['marker'], color)
+                    # canvas[j:k,i] = Ansi.format(ds['marker'], color)
+                    canvas[j:,i] = Ansi.format(ds['marker'], color)
             
             if ds.get('marker', None) is not None:
                 i,j = mapped.T
-                canvas[j,i] = Colors.format(ds['marker'], color)
+                canvas[j,i] = Ansi.format(ds['marker'], color)
             
             if 'percentile' in ds:
                 xp = ds['percentile']
@@ -506,11 +557,11 @@ class TPlot(object):
                 mapped,_ = self.transform(xp, yp)
                 
                 i = mapped[:,0]
-                canvas[0,i.min():i.max()] = Colors.format(u'━', color)
-                canvas[0,mapped[:,0]] = Colors.format(u'╋', color)
+                canvas[0,i.min():i.max()] = Ansi.format(u'━', color)
+                canvas[0,mapped[:,0]] = Ansi.format(u'╋', color)
                 
                 s = u'╋'.join([''] + [u'━'*d for d in np.diff(mapped[:,0])-1] + [''])
-                item = Colors.format(i.min()*' '+ s, color)
+                item = Ansi.format(i.min()*' '+ s, color)
                 footers.append([item])
                 headers.append([item])
 
@@ -530,12 +581,12 @@ class TPlot(object):
 
     def get_xticks(self):
         if self._xticks is None:
-            ticks = self.ax.get_xticks()
+            ticks = self._ax.get_xticks()
         else:
             ticks = self._xticks
         
         # find center y-coordinate
-        yc = 0.5*np.sum(self.ax.get_ylim())
+        yc = 0.5*np.sum(self._ax.get_ylim())
         pos, idx = self.transform(ticks, yc*np.ones_like(ticks), unique=False)
         
         # return list(zip(pos[:,0], ticks[idx]))
@@ -548,10 +599,10 @@ class TPlot(object):
 
         # reverse ordering due to differences in axes origin
         # between MPL and Tplot
-        ticks = self.ax.get_yticks()[::-1]
+        ticks = self._ax.get_yticks()[::-1]
 
         # get the center x-coordinate
-        xc = 0.5*np.sum(self.ax.get_xlim())
+        xc = 0.5*np.sum(self._ax.get_xlim())
         pos, idx = self.transform(xc*np.ones_like(ticks), ticks, unique=False)
         
         # return list(zip(pos[:,1], ticks[idx]))
@@ -571,7 +622,7 @@ class TPlot(object):
         print(self)
 
     def close(self):
-        plt.close(self.fig)
+        plt.close(self._fig)
 
     def __enter__(self):
         return self

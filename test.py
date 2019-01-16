@@ -1,7 +1,10 @@
 import numpy as np
+import tplot.utils
 import tplot
 
-size = tplot.get_output_size()
+tplot.Ansi.disable()
+
+size = tplot.utils.get_output_size()
 plot = tplot.TPlot(size.columns, size.lines)
 
 plot.show_grid(True)

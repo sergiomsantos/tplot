@@ -1,5 +1,5 @@
-import tplot
+import tplot.cli
 import sys
 
-sys.exit(tplot.main())
+sys.exit(tplot.cli.main())
 
