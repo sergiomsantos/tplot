@@ -10,17 +10,13 @@ import numpy as np
 
 __all__ = ['Format', 'TPlot']
 
-try:
-    from scipy.signal import convolve2d
-
-except ImportError as ex:
-
-    def convolve2d(mat, kernel, **kwargs):
-        # adapted from https://stackoverflow.com/a/43087771
-        s = kernel.shape + tuple(np.subtract(mat.shape, kernel.shape) + 1)
-        strd = np.lib.stride_tricks.as_strided
-        subM = strd(mat, shape = s, strides = mat.strides * 2)
-        return np.einsum('ij,ijkl->kl', kernel, subM)
+def convolve2d(mat, kernel, **kwargs):
+    #kernel = np.rot90(kernel0, 2)
+    # adapted from https://stackoverflow.com/a/43087771
+    s = kernel.shape + tuple(np.subtract(mat.shape, kernel.shape) + 1)
+    strd = np.lib.stride_tricks.as_strided
+    subM = strd(mat, shape = s, strides = mat.strides * 2)
+    return np.einsum('ij,ijkl->kl', kernel, subM)
 
 
 if IS_PYTHON3:
@@ -29,7 +25,7 @@ if IS_PYTHON3:
         return chr(m+10240)
 else:
     def to_braille(m):
-        return unichr(m+10240).encode('utf-8')
+        return unichr(m+10240)#.encode('utf-8')
 
 
 
@@ -43,11 +39,13 @@ BRAILLE_KERNEL = np.array([
 
 KERNEL41 = np.array([
     [ 1],
-    [ 2],
-    [ 4],
-    [ 8],
+    [ 1],
+    [ 1],
+    [ 1],
 ])
 
+# BRAILLE_KERNEL = np.rot90(BRAILLE_KERNEL, 2)
+# KERNEL41 = np.rot90(KERNEL41, 2)
 
 def get_unicode_array(size, fill=u''):
     ar = np.empty(size, dtype='U32')
@@ -90,8 +88,8 @@ class TPlot(object):
         self._xticks = None
         self._grid = False
         
-        self._colors  = cycle(Ansi.as_list())
-        self._markers = cycle('ox+.')
+        self._colors  = cycle(Ansi.available_colors())
+        self._markers = cycle(u'ox+.')
 
         self.set_tick_position(tick_position)
         self.set_xtick_format(xtick_format)
@@ -270,7 +268,7 @@ class TPlot(object):
         # keep the unique pairs
         if unique and mapped.size:
             mapped = np.unique(mapped, axis=0)
-
+        
         return mapped, idx
     
 
@@ -523,8 +521,11 @@ class TPlot(object):
                 pixels = np.zeros((L*(self._lines), C*(self._columns)), dtype=int)
                 i,j = mapped.T
                 pixels[j,i] = 1
+                #for line in pixels:
+                #    print(''.join('%4d'%n for n in line))
                 tmp = convolve2d(pixels, BRAILLE_KERNEL, mode='valid')[::L,::C]
-                
+
+                    
                 #f = np.vectorize(lambda n,c: Ansi.format(to_braille(n), c))
                 #i,j=np.nonzero(tmp)
                 #canvas[i,j] = f(tmp[i,j], c)

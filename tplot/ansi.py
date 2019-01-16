@@ -43,7 +43,7 @@ class Ansi:
         return Ansi._COLORS.get(name, '')
     
     @staticmethod
-    def as_list():
+    def available_colors():
         if Ansi._COLORS is None:
             Ansi.load()
         colors = [Ansi._COLORS[s]
