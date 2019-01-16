@@ -7,14 +7,15 @@ import tplot
 # size = tplot.utils.get_output_size()
 # plot = tplot.TPlot(size.columns, size.lines)
 # plot = tplot.TPlot(80,40)
-plot = tplot.TPlot((20,80))
+plot = tplot.TPlot((20,50))
+# plot = tplot.TPlot()
 
 plot.show_grid(True)
 plot.set_padding(0)
 plot.set_border(tplot.Format.ALL)
 plot.set_tick_position(tplot.Format.BOTTOM_LEFT)
 
-
+plot.set_title('o pai natal morreu')
 N = 1000000
 bins = 20
 

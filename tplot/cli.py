@@ -174,7 +174,7 @@ def main():
     for i,j,l in args.xy:
         if l is None:
             l = '%d-vs-%d'%(j,i)
-        plot.plot(data[i], data[j], label=l)
+        plot.line(data[i], data[j], label=l, connect=args.lines)
     
 
     # finally set axis limits

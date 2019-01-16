@@ -85,7 +85,8 @@ class TPlot(object):
         
         self._xticks = None
         self._grid = False
-        
+        self._title = None
+
         if size is None:
             size = get_output_size()
         self.set_size(*size)
@@ -98,6 +99,9 @@ class TPlot(object):
         
         self.reset()
 
+    def set_title(self, title):
+        self._title = title
+    
     def set_size(self, lines, columns):
         self._size = (lines, columns)
     
@@ -441,8 +445,9 @@ class TPlot(object):
         headers = []
         footers = []
 
+        if self._title is not None:
+            headers.append([self._title.center(columns-1)])
         
-
         
         
         if self._borders & Format.LEFT:
@@ -470,9 +475,11 @@ class TPlot(object):
         
         self._add_curves(canvas, headers, footers)
 
+        
+        
         for item in headers+footers:
            item.insert(0, w*' ')
-
+        
         figure = figure.tolist()
         lmargin = lmargin.tolist()
         rmargin = rmargin.tolist()
@@ -558,13 +565,13 @@ class TPlot(object):
                 mapped,_ = self.transform(xp, yp)
                 
                 i = mapped[:,0]
-                canvas[0,i.min():i.max()] = Ansi.format(u'━', color)
-                canvas[0,mapped[:,0]] = Ansi.format(u'╋', color)
+                # canvas[0,i.min():i.max()] = Ansi.format(u'━', color)
+                # canvas[0,mapped[:,0]] = Ansi.format(u'╋', color)
                 
                 s = u'╋'.join([''] + [u'━'*d for d in np.diff(mapped[:,0])-1] + [''])
                 item = Ansi.format(i.min()*' '+ s, color)
                 footers.append([item])
-                headers.append([item])
+                # headers.append([item])
 
 
 
