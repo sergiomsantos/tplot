@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
 
 from numpy.lib.stride_tricks import as_strided
 import matplotlib.pyplot as plt
@@ -494,7 +493,7 @@ class TPlot(object):
 
         if not IS_PYTHON3:
             s = s.encode('utf-8')
-        return s
+        return s + '\n'
     
 
     def _add_legends(self, figure):

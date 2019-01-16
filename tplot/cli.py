@@ -12,7 +12,7 @@ __all__ = ['main']
 def main():
 
 
-    nlines,ncolumns = get_output_size()
+    default_size = get_output_size()
     #print('DEFAULT SIZE =', tsize.lines, tsize.columns)
 
     def get_append_action(n):
@@ -98,12 +98,12 @@ def main():
     # parser: output configuration
     # ------------------------------------------- 
     group = parser.add_argument_group('Output configuration')
-    group.add_argument('--width', type=int,
-        metavar='W', help='output width', default=ncolumns)
     group.add_argument('--height', type=int,
-        metavar='H', help='output height', default=nlines)
+        metavar='H', help='output height', default=default_size[0])
+    group.add_argument('--width', type=int,
+        metavar='W', help='output width', default=default_size[1])
     group.add_argument('--padding', type=int, nargs='+',
-        metavar='P', help='left padding', default=[2])
+        metavar='P', help='padding (1, 2 or 4 values)', default=[2])
     group.add_argument('--mpl', action='store_true', help='show plot in matplotlib window')
     group.add_argument('--no-color', action='store_true', help='suppress colored output')
 
@@ -113,19 +113,9 @@ def main():
     args = parser.parse_args()
 
     if args.file is None:
-        print('Error: Missing "file" (-f) argument.')
+        sys.stderr.write('Error: Missing "file" (-f) argument.\n')
         exit(1)
-    #elif args.file == '-':
-    #    args.file = sys.stdin
 
-    #import pprint
-    #pprint.pprint(vars(args), indent=4)
-    
-    # do some work
-#     run(args)
-
-# def run(args):
-#     import numpy as np
 
     # load data
     data = np.loadtxt(
@@ -143,12 +133,12 @@ def main():
     plot = TPlot((args.height, args.width),
                 padding=args.padding)
 
+    # configure output
     if args.logx:
         plot.set_xscale('log')
     if args.logy:
         plot.set_yscale('log')
     
-    # configure output
     
     plot.show_grid(args.grid)
     plot.set_padding(*args.padding)
@@ -196,10 +186,10 @@ def main():
     # and show output
     if args.mpl:
         if MPL_DISABLED:
-            print('Matplotlib output is disabled!')
-            print(' > unset environment variable TPLOT_NOGUI and try again.')
+            sys.stderr.write('Matplotlib output is disabled!\n')
+            sys.stderr.write(' > unset environment variable TPLOT_NOGUI and try again.\n')
         else:
             plt.legend()
             plt.show()
     else:
-        print(plot)
+        sys.stdout.write(str(plot))

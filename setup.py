@@ -11,7 +11,6 @@ if __name__ == "__main__":
         packages=find_packages(),
         install_requires=[
             'numpy',
-            'future',
             'matplotlib',
         ],
         include_package_data=True,
