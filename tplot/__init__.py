@@ -27,7 +27,7 @@ if MPL_DISABLED:
 
 
 from .tplot import TPlot, Format
-from .utils import get_output_size
+# from .utils import get_output_size
 from .ansi import Ansi
 from .cli import main
 

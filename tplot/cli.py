@@ -12,8 +12,8 @@ __all__ = ['main']
 def main():
 
 
-    tsize = get_output_size()
-    print('DEFAULT SIZE =', tsize.lines, tsize.columns)
+    nlines,ncolumns = get_output_size()
+    #print('DEFAULT SIZE =', tsize.lines, tsize.columns)
 
     def get_append_action(n):
         class CustomAppendAction(argparse._AppendAction):
@@ -99,9 +99,9 @@ def main():
     # ------------------------------------------- 
     group = parser.add_argument_group('Output configuration')
     group.add_argument('--width', type=int,
-        metavar='W', help='output width', default=tsize.columns)
+        metavar='W', help='output width', default=ncolumns)
     group.add_argument('--height', type=int,
-        metavar='H', help='output height', default=tsize.lines)
+        metavar='H', help='output height', default=nlines)
     group.add_argument('--padding', type=int, nargs='+',
         metavar='P', help='left padding', default=[2])
     group.add_argument('--mpl', action='store_true', help='show plot in matplotlib window')
@@ -140,7 +140,7 @@ def main():
         data = data.T
     
     # instantiate TPlot
-    plot = TPlot(args.width, args.height,
+    plot = TPlot((args.height, args.width),
                 padding=args.padding)
 
     if args.logx:
@@ -189,9 +189,9 @@ def main():
 
     # finally set axis limits
     if args.ax:
-        plot.xlim = args.ax[-1]
+        plot.set_xlim(args.ax[-1])
     if args.ay:
-        plot.ylim = args.ay[-1]
+        plot.set_ylim(args.ay[-1])
     
     # and show output
     if args.mpl:
@@ -202,4 +202,4 @@ def main():
             plt.legend()
             plt.show()
     else:
-        plot.show()
+        print(plot)

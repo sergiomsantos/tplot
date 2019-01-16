@@ -35,13 +35,15 @@ class Ansi:
         
         # light gray
         Ansi._COLORS['GRID'] = get('TPLOT_GRID', '\033[2m')
-        
+    
+
     @staticmethod
     def get(name):
         if Ansi._COLORS is None:
             Ansi.load()
         return Ansi._COLORS.get(name, '')
     
+
     @staticmethod
     def available_colors():
         if Ansi._COLORS is None:
@@ -51,13 +53,16 @@ class Ansi:
                     if s.startswith('COLOR')]
         return colors
     
+
     @staticmethod
     def disable():
         Ansi._ENABLED = False
     
+
     @staticmethod
     def enable():
         Ansi._ENABLED = True
+    
     
     @staticmethod
     def format(s, *prefixes):

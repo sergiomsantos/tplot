@@ -1,31 +1,34 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
-from .ansi import Ansi
-from . import IS_PYTHON3
-
+from numpy.lib.stride_tricks import as_strided
 import matplotlib.pyplot as plt
 from itertools import cycle
 import numpy as np
 
+from .utils import get_output_size
+from . import IS_PYTHON3
+from .ansi import Ansi
+
 __all__ = ['Format', 'TPlot']
 
-def convolve2d(mat, kernel, **kwargs):
-    #kernel = np.rot90(kernel0, 2)
+
+def block_multiply(mat, kernel):
     # adapted from https://stackoverflow.com/a/43087771
-    s = kernel.shape + tuple(np.subtract(mat.shape, kernel.shape) + 1)
-    strd = np.lib.stride_tricks.as_strided
-    subM = strd(mat, shape = s, strides = mat.strides * 2)
-    return np.einsum('ij,ijkl->kl', kernel, subM)
+    shape = kernel.shape + tuple(np.subtract(mat.shape, kernel.shape) + 1)
+    sub_mat = as_strided(mat, shape=shape, strides=mat.strides*2)
+    out = np.einsum('ij,ijkl->kl', kernel, sub_mat)
+    kr,kc = kernel.shape
+    return out[::kr,::kc]
 
 
-if IS_PYTHON3:
-    def to_braille(m):
-        # 10240 = int('2800', 16)
-        return chr(m+10240)
-else:
-    def to_braille(m):
-        return unichr(m+10240)#.encode('utf-8')
+if not IS_PYTHON3:
+    chr = unichr
+
+
+def to_braille(m):
+    # 10240 = int('2800', 16)
+    return chr(m+10240)#.encode('utf-8')
 
 
 
@@ -44,8 +47,6 @@ KERNEL41 = np.array([
     [ 1],
 ])
 
-# BRAILLE_KERNEL = np.rot90(BRAILLE_KERNEL, 2)
-# KERNEL41 = np.rot90(KERNEL41, 2)
 
 def get_unicode_array(size, fill=u''):
     ar = np.empty(size, dtype='U32')
@@ -68,15 +69,13 @@ class Format:
 
 class TPlot(object):
     
-    def __init__(self, columns, lines,
-                #logx=False, logy=False,
-                borders=Format.BOTTOM_LEFT,
-                tick_position=Format.BOTTOM_LEFT,
-                xtick_format='%r',
-                ytick_format='%r',
+    def __init__(self, size=None,
+                tick_position=None,
+                xtick_format=None,
+                ytick_format=None,
+                borders=None,
                 padding=(0,)):
 
-        self._size = (lines, columns)
         self._datasets = []
         
         self._fig = plt.figure()
@@ -88,18 +87,33 @@ class TPlot(object):
         self._xticks = None
         self._grid = False
         
-        self._colors  = cycle(Ansi.available_colors())
-        self._markers = cycle(u'ox+.')
+        if size is None:
+            tsize = get_output_size()
+            self.set_size(tsize.lines, tsize.columns)
+        else:
+            self.set_size(*size)
 
         self.set_tick_position(tick_position)
         self.set_xtick_format(xtick_format)
         self.set_ytick_format(ytick_format)
         self.set_padding(*padding)
         self.set_border(borders)
+        
+        self.reset()
+
+    def set_size(self, lines, columns):
+        self._size = (lines, columns)
     
+    def reset(self):
+        self._colors  = cycle(Ansi.available_colors())
+        self._markers = cycle(u'ox+.')
+        return self
+        
     def clear(self):
-        self._ax.clear()
         self._datasets = []
+        self._ax.clear()
+        return self
+        
 
     def set_yscale(self, scale):
         if not scale in ('linear', 'log'):
@@ -115,6 +129,8 @@ class TPlot(object):
     
 
     def set_tick_position(self, position):
+        if position is None:
+            position = Format.BOTTOM_LEFT
         self._tick_position = position
 
 
@@ -131,11 +147,8 @@ class TPlot(object):
         * two values - `left = right = padding[0]`, `top = bottom = padding[1]`
         * fours values - `left,top,right,bottom = padding`
         
-        ```python
-        print(ola)
-        ```
-        
         '''
+        
         count = len(padding)
         if count == 1:
             self._padding = 4*padding
@@ -207,6 +220,7 @@ class TPlot(object):
 
         return dataset
 
+
     def hist(self, y, bins=10,
             range=None, label=None, add_percentile=True,
             marker = u'█', color=None):
@@ -219,27 +233,24 @@ class TPlot(object):
         if add_percentile:
             dataset['percentile'] = np.percentile(y, [25, 50, 75])
         
-        # self._datasets.append(dataset)
-        # self._ax.bar(x, hist, label=label)
-        # self.set_xticks(bin_edges)
         return dataset
 
     def show_grid(self, show=True):
         self._ax.grid(show)
         self._grid = show
     
-    def _set_xlim(self, xlim):
+    def set_xlim(self, xlim):
         self._ax.set_xlim(xlim)
-    def _get_xlim(self):
+    
+    def get_xlim(self):
         return self._ax.get_xlim()
-    xlim = property(_get_xlim, _set_xlim)
-
-    def _set_ylim(self, ylim):
+    
+    def set_ylim(self, ylim):
         self._ax.set_ylim(ylim)        
-    def _get_ylim(self):
+    
+    def get_ylim(self):
         return self._ax.get_ylim()
-    ylim = property(_get_ylim, _set_ylim)
-
+    
 
     def transform(self, x, y, sub_sampling=None, unique=True):
 
@@ -276,7 +287,7 @@ class TPlot(object):
         
         pl,pt,pr,pb = self._padding
 
-        ylim_min, ylim_max = sorted(self.ylim)
+        ylim_min, ylim_max = sorted(self.get_ylim())
         
         # get candidate tick labels
         y_labels = self._ax.get_yticks()
@@ -339,7 +350,9 @@ class TPlot(object):
         return figure, canvas
 
 
-    def set_border(self, borders=Format.ALL):
+    def set_border(self, borders=None):
+        if borders is None:
+            borders = Format.ALL
         self._borders = borders
 
     def __str__(self):
@@ -357,13 +370,9 @@ class TPlot(object):
                 x-labels    t
              padding-bottom
         '''
-        #self.set_padding(0)
-        # self.set_border(Format.NONE|Format.BOTTOM|Format.LEFT)
-        # self.set_border(Format.ALL)#BOTTOM_LEFT)
-        # self.set_tick_position(Format.BOTTOM_LEFT)
-
-        ylim = self.ylim
-        self.ylim = reversed(ylim)
+        
+        ylim = self.get_ylim()
+        self.set_ylim(reversed(ylim))
         
         # GET FIGURE AND CANVAS
         # -----------------------------
@@ -521,14 +530,8 @@ class TPlot(object):
                 pixels = np.zeros((L*(self._lines), C*(self._columns)), dtype=int)
                 i,j = mapped.T
                 pixels[j,i] = 1
-                #for line in pixels:
-                #    print(''.join('%4d'%n for n in line))
-                tmp = convolve2d(pixels, BRAILLE_KERNEL, mode='valid')[::L,::C]
-
-                    
-                #f = np.vectorize(lambda n,c: Ansi.format(to_braille(n), c))
-                #i,j=np.nonzero(tmp)
-                #canvas[i,j] = f(tmp[i,j], c)
+                
+                tmp = block_multiply(pixels, BRAILLE_KERNEL)
                 
                 for i,j in zip(*np.nonzero(tmp)):
                    canvas[i,j] = Ansi.format(to_braille(tmp[i,j]), color)
@@ -554,7 +557,7 @@ class TPlot(object):
             
             if 'percentile' in ds:
                 xp = ds['percentile']
-                yp = min(self.ylim) * np.ones_like(xp)
+                yp = min(self.get_ylim()) * np.ones_like(xp)
                 mapped,_ = self.transform(xp, yp)
                 
                 i = mapped[:,0]
@@ -572,9 +575,13 @@ class TPlot(object):
         
         
     def set_xtick_format(self, fmt):
+        if fmt is None:
+            fmt = '%r'
         self._xtick_fmt = fmt
     
     def set_ytick_format(self, fmt):
+        if fmt is None:
+            fmt = '%r'
         self._ytick_fmt = fmt
 
     def set_xticks(self, ticks):
@@ -610,25 +617,19 @@ class TPlot(object):
         return pos[:,1], ticks[idx]
 
 
-    # def __str__(self):
-    #     s = self.as_string()
-    #     if not IS_PYTHON3:
-    #         s = s.encode('utf-8')
-    #     return s
-
     def __repr__(self):
         return str(self)
     
-    def show(self):
-        print(self)
+    # def show(self):
+    #     print(self)
 
     def close(self):
         plt.close(self._fig)
 
-    def __enter__(self):
-        return self
+    # def __enter__(self):
+    #     return self
 
-    def __exit__(self, *args):
-        self.close()
+    # def __exit__(self, *args):
+    #     self.close()
     
     

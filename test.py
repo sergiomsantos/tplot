@@ -4,9 +4,10 @@ import tplot
 
 # tplot.Ansi.disable()
 
-size = tplot.utils.get_output_size()
+# size = tplot.utils.get_output_size()
 # plot = tplot.TPlot(size.columns, size.lines)
-plot = tplot.TPlot(40,20)
+# plot = tplot.TPlot(80,40)
+plot = tplot.TPlot((20,80))
 
 plot.show_grid(True)
 plot.set_padding(0)
@@ -28,16 +29,24 @@ x = 0.5*(e[1:] + e[:-1])
 # dataset['percentile'] = p
 
 #plot.hist(a, bins=bins, add_percentile=True)
-x  = np.arange(3)
-h = x
 plot.line(x, h, connect=True)
 
 # plot.xlim = (-100, 100)
-plot.show()
+# plot.show()
+print(plot)
 
-# # clear plot and draw as line
-# plot.clear()
-# plot.line(x, h, connect=True)
-
+# clear plot and draw as line
+# plot.clear().line(x, h, connect=True)
 # print(plot)
+# plot.clear().line(x, h, connect=True)
+# print(plot)
+# plot.clear().line(x, h, connect=True)
+# print(plot)
+# plot.clear().line(x, h, connect=True)
+# print(plot)
+# plot.clear().line(x, h, connect=True)
+# print(plot)
+# plot.clear().line(x, h, connect=True)
+# print(plot)
+
 
