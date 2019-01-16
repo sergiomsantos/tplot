@@ -88,10 +88,8 @@ class TPlot(object):
         self._grid = False
         
         if size is None:
-            tsize = get_output_size()
-            self.set_size(tsize.lines, tsize.columns)
-        else:
-            self.set_size(*size)
+            size = get_output_size()
+        self.set_size(*size)
 
         self.set_tick_position(tick_position)
         self.set_xtick_format(xtick_format)
