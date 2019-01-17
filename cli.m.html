@@ -1080,8 +1080,8 @@ table {
 <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
 
 
-    <span class="n">tsize</span> <span class="o">=</span> <span class="n">get_output_size</span><span class="p">()</span>
-    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;DEFAULT SIZE =&#39;</span><span class="p">,</span> <span class="n">tsize</span><span class="o">.</span><span class="n">lines</span><span class="p">,</span> <span class="n">tsize</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">default_size</span> <span class="o">=</span> <span class="n">get_output_size</span><span class="p">()</span>
+    <span class="c1">#print(&#39;DEFAULT SIZE =&#39;, tsize.lines, tsize.columns)</span>
 
     <span class="k">def</span> <span class="nf">get_append_action</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
         <span class="k">class</span> <span class="nc">CustomAppendAction</span><span class="p">(</span><span class="n">argparse</span><span class="o">.</span><span class="n">_AppendAction</span><span class="p">):</span>
@@ -1158,20 +1158,22 @@ table {
         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;show grid&#39;</span><span class="p">)</span>
     
     <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">Format</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)]</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--border&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">choices</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;BOTTOM_LEFT&#39;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--labels&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">choices</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;BOTTOM_LEFT&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--border&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">choices</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;BOTTOM_LEFT&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--labels&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">choices</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;BOTTOM_LEFT&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--x-fmt&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--y-fmt&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--title&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
 
     <span class="c1"># parser: output configuration</span>
     <span class="c1"># ------------------------------------------- </span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Output configuration&#39;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--width&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;output width&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">tsize</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--height&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;output height&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">tsize</span><span class="o">.</span><span class="n">lines</span><span class="p">)</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;output height&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default_size</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--width&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;output width&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default_size</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--padding&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;+&#39;</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;left padding&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;padding (1, 2 or 4 values)&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--mpl&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;show plot in matplotlib window&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--no-color&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;suppress colored output&#39;</span><span class="p">)</span>
 
@@ -1181,19 +1183,9 @@ table {
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">file</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;Error: Missing &quot;file&quot; (-f) argument.&#39;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;Error: Missing &quot;file&quot; (-f) argument.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="nb">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-    <span class="c1">#elif args.file == &#39;-&#39;:</span>
-    <span class="c1">#    args.file = sys.stdin</span>
 
-    <span class="c1">#import pprint</span>
-    <span class="c1">#pprint.pprint(vars(args), indent=4)</span>
-    
-    <span class="c1"># do some work</span>
-<span class="c1">#     run(args)</span>
-
-<span class="c1"># def run(args):</span>
-<span class="c1">#     import numpy as np</span>
 
     <span class="c1"># load data</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span>
@@ -1208,15 +1200,15 @@ table {
         <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">T</span>
     
     <span class="c1"># instantiate TPlot</span>
-    <span class="n">plot</span> <span class="o">=</span> <span class="n">TPlot</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+    <span class="n">plot</span> <span class="o">=</span> <span class="n">TPlot</span><span class="p">((</span><span class="n">args</span><span class="o">.</span><span class="n">height</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">width</span><span class="p">),</span>
                 <span class="n">padding</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">padding</span><span class="p">)</span>
 
+    <span class="c1"># configure output</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">logx</span><span class="p">:</span>
         <span class="n">plot</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">logy</span><span class="p">:</span>
         <span class="n">plot</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
     
-    <span class="c1"># configure output</span>
     
     <span class="n">plot</span><span class="o">.</span><span class="n">show_grid</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">grid</span><span class="p">)</span>
     <span class="n">plot</span><span class="o">.</span><span class="n">set_padding</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">padding</span><span class="p">)</span>
@@ -1225,6 +1217,7 @@ table {
     <span class="n">plot</span><span class="o">.</span><span class="n">set_border</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">Format</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">border</span><span class="p">))</span>
     <span class="n">plot</span><span class="o">.</span><span class="n">set_xtick_format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">x_fmt</span><span class="p">)</span>
     <span class="n">plot</span><span class="o">.</span><span class="n">set_ytick_format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">y_fmt</span><span class="p">)</span>
+    <span class="n">plot</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">title</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">no_color</span><span class="p">:</span>
         <span class="n">Ansi</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
@@ -1252,25 +1245,25 @@ table {
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">l</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">xy</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">l</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">l</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">-vs-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">)</span>
-        <span class="n">plot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">l</span><span class="p">)</span>
+        <span class="n">plot</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="n">connect</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">lines</span><span class="p">)</span>
     
 
     <span class="c1"># finally set axis limits</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">ax</span><span class="p">:</span>
-        <span class="n">plot</span><span class="o">.</span><span class="n">xlim</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">ax</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">plot</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ax</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">ay</span><span class="p">:</span>
-        <span class="n">plot</span><span class="o">.</span><span class="n">ylim</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">ay</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">plot</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ay</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
     
     <span class="c1"># and show output</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">mpl</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">MPL_DISABLED</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;Matplotlib output is disabled!&#39;</span><span class="p">)</span>
-            <span class="k">print</span><span class="p">(</span><span class="s1">&#39; &gt; unset environment variable TPLOT_NOGUI and try again.&#39;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;Matplotlib output is disabled!</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39; &gt; unset environment variable TPLOT_NOGUI and try again.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">plot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">plot</span><span class="p">))</span>
 </pre></div>
 
   </div>
@@ -1295,8 +1288,8 @@ table {
     <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
 
 
-    <span class="n">tsize</span> <span class="o">=</span> <span class="n">get_output_size</span><span class="p">()</span>
-    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;DEFAULT SIZE =&#39;</span><span class="p">,</span> <span class="n">tsize</span><span class="o">.</span><span class="n">lines</span><span class="p">,</span> <span class="n">tsize</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">default_size</span> <span class="o">=</span> <span class="n">get_output_size</span><span class="p">()</span>
+    <span class="c1">#print(&#39;DEFAULT SIZE =&#39;, tsize.lines, tsize.columns)</span>
 
     <span class="k">def</span> <span class="nf">get_append_action</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
         <span class="k">class</span> <span class="nc">CustomAppendAction</span><span class="p">(</span><span class="n">argparse</span><span class="o">.</span><span class="n">_AppendAction</span><span class="p">):</span>
@@ -1373,20 +1366,22 @@ table {
         <span class="n">help</span><span class="o">=</span><span class="s1">&#39;show grid&#39;</span><span class="p">)</span>
     
     <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">Format</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)]</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--border&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">choices</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;BOTTOM_LEFT&#39;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--labels&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">choices</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;BOTTOM_LEFT&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--border&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">choices</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;BOTTOM_LEFT&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--labels&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">choices</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;BOTTOM_LEFT&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--x-fmt&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--y-fmt&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--title&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
 
     <span class="c1"># parser: output configuration</span>
     <span class="c1"># ------------------------------------------- </span>
     <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s1">&#39;Output configuration&#39;</span><span class="p">)</span>
-    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--width&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;output width&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">tsize</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--height&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;output height&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">tsize</span><span class="o">.</span><span class="n">lines</span><span class="p">)</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;output height&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default_size</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--width&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;output width&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default_size</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--padding&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;+&#39;</span><span class="p">,</span>
-        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;left padding&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;padding (1, 2 or 4 values)&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--mpl&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;show plot in matplotlib window&#39;</span><span class="p">)</span>
     <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--no-color&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;suppress colored output&#39;</span><span class="p">)</span>
 
@@ -1396,19 +1391,9 @@ table {
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">file</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;Error: Missing &quot;file&quot; (-f) argument.&#39;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;Error: Missing &quot;file&quot; (-f) argument.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="nb">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-    <span class="c1">#elif args.file == &#39;-&#39;:</span>
-    <span class="c1">#    args.file = sys.stdin</span>
 
-    <span class="c1">#import pprint</span>
-    <span class="c1">#pprint.pprint(vars(args), indent=4)</span>
-    
-    <span class="c1"># do some work</span>
-<span class="c1">#     run(args)</span>
-
-<span class="c1"># def run(args):</span>
-<span class="c1">#     import numpy as np</span>
 
     <span class="c1"># load data</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span>
@@ -1423,15 +1408,15 @@ table {
         <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">T</span>
     
     <span class="c1"># instantiate TPlot</span>
-    <span class="n">plot</span> <span class="o">=</span> <span class="n">TPlot</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+    <span class="n">plot</span> <span class="o">=</span> <span class="n">TPlot</span><span class="p">((</span><span class="n">args</span><span class="o">.</span><span class="n">height</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">width</span><span class="p">),</span>
                 <span class="n">padding</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">padding</span><span class="p">)</span>
 
+    <span class="c1"># configure output</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">logx</span><span class="p">:</span>
         <span class="n">plot</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">logy</span><span class="p">:</span>
         <span class="n">plot</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
     
-    <span class="c1"># configure output</span>
     
     <span class="n">plot</span><span class="o">.</span><span class="n">show_grid</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">grid</span><span class="p">)</span>
     <span class="n">plot</span><span class="o">.</span><span class="n">set_padding</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="o">.</span><span class="n">padding</span><span class="p">)</span>
@@ -1440,6 +1425,7 @@ table {
     <span class="n">plot</span><span class="o">.</span><span class="n">set_border</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">Format</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">border</span><span class="p">))</span>
     <span class="n">plot</span><span class="o">.</span><span class="n">set_xtick_format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">x_fmt</span><span class="p">)</span>
     <span class="n">plot</span><span class="o">.</span><span class="n">set_ytick_format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">y_fmt</span><span class="p">)</span>
+    <span class="n">plot</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">title</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">no_color</span><span class="p">:</span>
         <span class="n">Ansi</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
@@ -1467,25 +1453,25 @@ table {
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">l</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">xy</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">l</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">l</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">-vs-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">)</span>
-        <span class="n">plot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">l</span><span class="p">)</span>
+        <span class="n">plot</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="n">connect</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">lines</span><span class="p">)</span>
     
 
     <span class="c1"># finally set axis limits</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">ax</span><span class="p">:</span>
-        <span class="n">plot</span><span class="o">.</span><span class="n">xlim</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">ax</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">plot</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ax</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">ay</span><span class="p">:</span>
-        <span class="n">plot</span><span class="o">.</span><span class="n">ylim</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">ay</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">plot</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ay</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
     
     <span class="c1"># and show output</span>
     <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">mpl</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">MPL_DISABLED</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;Matplotlib output is disabled!&#39;</span><span class="p">)</span>
-            <span class="k">print</span><span class="p">(</span><span class="s1">&#39; &gt; unset environment variable TPLOT_NOGUI and try again.&#39;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;Matplotlib output is disabled!</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39; &gt; unset environment variable TPLOT_NOGUI and try again.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">plot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">plot</span><span class="p">))</span>
 </pre></div>
 
   </div>
