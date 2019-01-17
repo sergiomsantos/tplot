@@ -1069,36 +1069,33 @@ table {
     <div class="codehilite"><pre><span></span><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;get_output_size&#39;</span><span class="p">]</span>
 
 <span class="k">def</span> <span class="nf">get_output_size</span><span class="p">():</span>
-    <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
     <span class="kn">import</span> <span class="nn">os</span>
-
-    <span class="n">TSize</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;TSize&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;columns&#39;</span><span class="p">,</span> <span class="s1">&#39;lines&#39;</span><span class="p">])</span>
-    <span class="n">fallback</span><span class="o">=</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span><span class="mi">24</span><span class="p">)</span>
 
     <span class="c1"># try to get default size from env variables</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">size</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;TPLOT_SIZE&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-        <span class="n">c</span><span class="p">,</span><span class="n">r</span> <span class="o">=</span> <span class="n">size</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">TSize</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">c</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+        <span class="n">lines</span><span class="p">,</span><span class="n">columns</span> <span class="o">=</span> <span class="n">size</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">lines</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">pass</span>
     
     <span class="c1"># try shutil if py3</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="kn">import</span> <span class="nn">shutil</span>
-        <span class="k">return</span> <span class="n">shutil</span><span class="o">.</span><span class="n">get_terminal_size</span><span class="p">(</span><span class="n">fallback</span><span class="o">=</span><span class="n">fallback</span><span class="p">)</span>
+        <span class="n">tsize</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">get_terminal_size</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">tsize</span><span class="o">.</span><span class="n">lines</span><span class="p">,</span> <span class="n">tsize</span><span class="o">.</span><span class="n">columns</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">pass</span>
     
     <span class="c1"># try stty if py2</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">r</span><span class="p">,</span><span class="n">c</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">popen</span><span class="p">(</span><span class="s1">&#39;stty size&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">TSize</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">c</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+        <span class="n">lines</span><span class="p">,</span><span class="n">columns</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">popen</span><span class="p">(</span><span class="s1">&#39;stty size&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">lines</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">pass</span>
 
     <span class="c1"># final fallback option (80 columns, 24 lines)</span>
-    <span class="k">return</span> <span class="n">TSize</span><span class="p">(</span><span class="o">*</span><span class="n">fallback</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="mi">80</span><span class="p">)</span>
 </pre></div>
 
   </div>
@@ -1121,36 +1118,33 @@ table {
   <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.utils.get_output_size', this);">Show source &equiv;</a></p>
   <div id="source-tplot.utils.get_output_size" class="source">
     <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_output_size</span><span class="p">():</span>
-    <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
     <span class="kn">import</span> <span class="nn">os</span>
-
-    <span class="n">TSize</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;TSize&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;columns&#39;</span><span class="p">,</span> <span class="s1">&#39;lines&#39;</span><span class="p">])</span>
-    <span class="n">fallback</span><span class="o">=</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span><span class="mi">24</span><span class="p">)</span>
 
     <span class="c1"># try to get default size from env variables</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">size</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;TPLOT_SIZE&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-        <span class="n">c</span><span class="p">,</span><span class="n">r</span> <span class="o">=</span> <span class="n">size</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">TSize</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">c</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+        <span class="n">lines</span><span class="p">,</span><span class="n">columns</span> <span class="o">=</span> <span class="n">size</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">lines</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">pass</span>
     
     <span class="c1"># try shutil if py3</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="kn">import</span> <span class="nn">shutil</span>
-        <span class="k">return</span> <span class="n">shutil</span><span class="o">.</span><span class="n">get_terminal_size</span><span class="p">(</span><span class="n">fallback</span><span class="o">=</span><span class="n">fallback</span><span class="p">)</span>
+        <span class="n">tsize</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">get_terminal_size</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">tsize</span><span class="o">.</span><span class="n">lines</span><span class="p">,</span> <span class="n">tsize</span><span class="o">.</span><span class="n">columns</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">pass</span>
     
     <span class="c1"># try stty if py2</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">r</span><span class="p">,</span><span class="n">c</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">popen</span><span class="p">(</span><span class="s1">&#39;stty size&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">TSize</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">c</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+        <span class="n">lines</span><span class="p">,</span><span class="n">columns</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">popen</span><span class="p">(</span><span class="s1">&#39;stty size&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">lines</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="k">pass</span>
 
     <span class="c1"># final fallback option (80 columns, 24 lines)</span>
-    <span class="k">return</span> <span class="n">TSize</span><span class="p">(</span><span class="o">*</span><span class="n">fallback</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="mi">80</span><span class="p">)</span>
 </pre></div>
 
   </div>

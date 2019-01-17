@@ -1,4 +1,5 @@
 .DS_Store
+.vscode
 
 #------------------------------------------------------------------------------
 # taken from https://github.com/github/gitignore/blob/master/Python.gitignore

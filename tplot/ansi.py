@@ -2,6 +2,19 @@ import os
 
 __all__ = ['Ansi']
 
+# def f(a, s, **d):
+#     if not d:
+#         return '<h1 style="{}">{}</h1>'.format(s,a)
+#     k,v = d.popitem()
+#     return f(a, '{} {}:{};'.format(s,k,v), **d)
+# def enable_html():
+#     Ansi._COLORS = {
+#         'COLOR1': 'color=red',
+#         'COLOR2': 'color=green',
+#         'COLOR3': 'color=blue',
+#     }
+
+
 class Ansi:
 
     RESET = '\033[0m'

@@ -1058,19 +1058,25 @@ table {
     <li class="mono"><a href="#tplot.tplot.TPlot.clear">clear</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.close">close</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.get_padding">get_padding</a></li>
+    <li class="mono"><a href="#tplot.tplot.TPlot.get_xlim">get_xlim</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.get_xticks">get_xticks</a></li>
+    <li class="mono"><a href="#tplot.tplot.TPlot.get_ylim">get_ylim</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.get_yticks">get_yticks</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.hist">hist</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.line">line</a></li>
+    <li class="mono"><a href="#tplot.tplot.TPlot.reset">reset</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.set_border">set_border</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.set_padding">set_padding</a></li>
+    <li class="mono"><a href="#tplot.tplot.TPlot.set_size">set_size</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.set_tick_position">set_tick_position</a></li>
+    <li class="mono"><a href="#tplot.tplot.TPlot.set_title">set_title</a></li>
+    <li class="mono"><a href="#tplot.tplot.TPlot.set_xlim">set_xlim</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.set_xscale">set_xscale</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.set_xtick_format">set_xtick_format</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.set_xticks">set_xticks</a></li>
+    <li class="mono"><a href="#tplot.tplot.TPlot.set_ylim">set_ylim</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.set_yscale">set_yscale</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.set_ytick_format">set_ytick_format</a></li>
-    <li class="mono"><a href="#tplot.tplot.TPlot.show">show</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.show_grid">show_grid</a></li>
     <li class="mono"><a href="#tplot.tplot.TPlot.transform">transform</a></li>
   </ul>
@@ -1096,37 +1102,35 @@ table {
   <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot', this);">Show source &equiv;</a></p>
   <div id="source-tplot.tplot" class="source">
     <div class="codehilite"><pre><span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
 
-<span class="kn">from</span> <span class="nn">.ansi</span> <span class="kn">import</span> <span class="n">Ansi</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">IS_PYTHON3</span>
-
+<span class="kn">from</span> <span class="nn">numpy.lib.stride_tricks</span> <span class="kn">import</span> <span class="n">as_strided</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">cycle</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">get_output_size</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">IS_PYTHON3</span>
+<span class="kn">from</span> <span class="nn">.ansi</span> <span class="kn">import</span> <span class="n">Ansi</span>
+
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Format&#39;</span><span class="p">,</span> <span class="s1">&#39;TPlot&#39;</span><span class="p">]</span>
 
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">convolve2d</span>
 
-<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-
-    <span class="k">def</span> <span class="nf">convolve2d</span><span class="p">(</span><span class="n">mat</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="c1"># adapted from https://stackoverflow.com/a/43087771</span>
-        <span class="n">s</span> <span class="o">=</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">strd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">stride_tricks</span><span class="o">.</span><span class="n">as_strided</span>
-        <span class="n">subM</span> <span class="o">=</span> <span class="n">strd</span><span class="p">(</span><span class="n">mat</span><span class="p">,</span> <span class="n">shape</span> <span class="o">=</span> <span class="n">s</span><span class="p">,</span> <span class="n">strides</span> <span class="o">=</span> <span class="n">mat</span><span class="o">.</span><span class="n">strides</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;ij,ijkl-&gt;kl&#39;</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">subM</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">block_multiply</span><span class="p">(</span><span class="n">mat</span><span class="p">,</span> <span class="n">kernel</span><span class="p">):</span>
+    <span class="c1"># adapted from https://stackoverflow.com/a/43087771</span>
+    <span class="n">shape</span> <span class="o">=</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">sub_mat</span> <span class="o">=</span> <span class="n">as_strided</span><span class="p">(</span><span class="n">mat</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span> <span class="n">strides</span><span class="o">=</span><span class="n">mat</span><span class="o">.</span><span class="n">strides</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;ij,ijkl-&gt;kl&#39;</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">sub_mat</span><span class="p">)</span>
+    <span class="n">kr</span><span class="p">,</span><span class="n">kc</span> <span class="o">=</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">return</span> <span class="n">out</span><span class="p">[::</span><span class="n">kr</span><span class="p">,::</span><span class="n">kc</span><span class="p">]</span>
 
 
-<span class="k">if</span> <span class="n">IS_PYTHON3</span><span class="p">:</span>
-    <span class="k">def</span> <span class="nf">to_braille</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="c1"># 10240 = int(&#39;2800&#39;, 16)</span>
-        <span class="k">return</span> <span class="nb">chr</span><span class="p">(</span><span class="n">m</span><span class="o">+</span><span class="mi">10240</span><span class="p">)</span>
-<span class="k">else</span><span class="p">:</span>
-    <span class="k">def</span> <span class="nf">to_braille</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">unichr</span><span class="p">(</span><span class="n">m</span><span class="o">+</span><span class="mi">10240</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">IS_PYTHON3</span><span class="p">:</span>
+    <span class="nb">chr</span> <span class="o">=</span> <span class="nb">unichr</span>
+
+
+<span class="k">def</span> <span class="nf">to_braille</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="c1"># 10240 = int(&#39;2800&#39;, 16)</span>
+    <span class="k">return</span> <span class="nb">chr</span><span class="p">(</span><span class="n">m</span><span class="o">+</span><span class="mi">10240</span><span class="p">)</span><span class="c1">#.encode(&#39;utf-8&#39;)</span>
 
 
 
@@ -1140,9 +1144,9 @@ table {
 
 <span class="n">KERNEL41</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
     <span class="p">[</span> <span class="mi">1</span><span class="p">],</span>
-    <span class="p">[</span> <span class="mi">2</span><span class="p">],</span>
-    <span class="p">[</span> <span class="mi">4</span><span class="p">],</span>
-    <span class="p">[</span> <span class="mi">8</span><span class="p">],</span>
+    <span class="p">[</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="p">[</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="p">[</span> <span class="mi">1</span><span class="p">],</span>
 <span class="p">])</span>
 
 
@@ -1167,15 +1171,13 @@ table {
 
 <span class="k">class</span> <span class="nc">TPlot</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">lines</span><span class="p">,</span>
-                <span class="c1">#logx=False, logy=False,</span>
-                <span class="n">borders</span><span class="o">=</span><span class="n">Format</span><span class="o">.</span><span class="n">BOTTOM_LEFT</span><span class="p">,</span>
-                <span class="n">tick_position</span><span class="o">=</span><span class="n">Format</span><span class="o">.</span><span class="n">BOTTOM_LEFT</span><span class="p">,</span>
-                <span class="n">xtick_format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span>
-                <span class="n">ytick_format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">tick_position</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">xtick_format</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">ytick_format</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">borders</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                 <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,)):</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">columns</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span> <span class="o">=</span> <span class="p">[]</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
@@ -1186,19 +1188,36 @@ table {
         
         <span class="bp">self</span><span class="o">.</span><span class="n">_xticks</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_grid</span> <span class="o">=</span> <span class="bp">False</span>
-        
-        <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span>  <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="n">Ansi</span><span class="o">.</span><span class="n">as_list</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_markers</span> <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="s1">&#39;ox+.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">get_output_size</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="o">*</span><span class="n">size</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">set_tick_position</span><span class="p">(</span><span class="n">tick_position</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_xtick_format</span><span class="p">(</span><span class="n">xtick_format</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_ytick_format</span><span class="p">(</span><span class="n">ytick_format</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_padding</span><span class="p">(</span><span class="o">*</span><span class="n">padding</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_border</span><span class="p">(</span><span class="n">borders</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">set_title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="o">=</span> <span class="n">title</span>
     
+    <span class="k">def</span> <span class="nf">set_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="p">,</span> <span class="n">columns</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">columns</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span>  <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="n">Ansi</span><span class="o">.</span><span class="n">available_colors</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_markers</span> <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;ox+.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+        
     <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+        
 
     <span class="k">def</span> <span class="nf">set_yscale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">scale</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="s1">&#39;log&#39;</span><span class="p">):</span>
@@ -1214,6 +1233,8 @@ table {
     
 
     <span class="k">def</span> <span class="nf">set_tick_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">position</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">position</span> <span class="o">=</span> <span class="n">Format</span><span class="o">.</span><span class="n">BOTTOM_LEFT</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tick_position</span> <span class="o">=</span> <span class="n">position</span>
 
 
@@ -1230,11 +1251,8 @@ table {
 <span class="sd">        * two values - `left = right = padding[0]`, `top = bottom = padding[1]`</span>
 <span class="sd">        * fours values - `left,top,right,bottom = padding`</span>
 <span class="sd">        </span>
-<span class="sd">        ```python</span>
-<span class="sd">        print(ola)</span>
-<span class="sd">        ```</span>
-<span class="sd">        </span>
 <span class="sd">        &#39;&#39;&#39;</span>
+        
         <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">padding</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_padding</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="n">padding</span>
@@ -1306,6 +1324,7 @@ table {
 
         <span class="k">return</span> <span class="n">dataset</span>
 
+
     <span class="k">def</span> <span class="nf">hist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
             <span class="nb">range</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">add_percentile</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
             <span class="n">marker</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;█&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
@@ -1318,27 +1337,24 @@ table {
         <span class="k">if</span> <span class="n">add_percentile</span><span class="p">:</span>
             <span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">75</span><span class="p">])</span>
         
-        <span class="c1"># self._datasets.append(dataset)</span>
-        <span class="c1"># self._ax.bar(x, hist, label=label)</span>
-        <span class="c1"># self.set_xticks(bin_edges)</span>
         <span class="k">return</span> <span class="n">dataset</span>
 
     <span class="k">def</span> <span class="nf">show_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">show</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_grid</span> <span class="o">=</span> <span class="n">show</span>
     
-    <span class="k">def</span> <span class="nf">_set_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xlim</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">set_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xlim</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">_get_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">get_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
-    <span class="n">xlim</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_xlim</span><span class="p">,</span> <span class="n">_set_xlim</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_set_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ylim</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">set_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ylim</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>        
-    <span class="k">def</span> <span class="nf">_get_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">get_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
-    <span class="n">ylim</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_ylim</span><span class="p">,</span> <span class="n">_set_ylim</span><span class="p">)</span>
-
+    
 
     <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sub_sampling</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
 
@@ -1367,7 +1383,7 @@ table {
         <span class="c1"># keep the unique pairs</span>
         <span class="k">if</span> <span class="n">unique</span> <span class="ow">and</span> <span class="n">mapped</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
             <span class="n">mapped</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">mapped</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
+        
         <span class="k">return</span> <span class="n">mapped</span><span class="p">,</span> <span class="n">idx</span>
     
 
@@ -1375,7 +1391,7 @@ table {
         
         <span class="n">pl</span><span class="p">,</span><span class="n">pt</span><span class="p">,</span><span class="n">pr</span><span class="p">,</span><span class="n">pb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_padding</span>
 
-        <span class="n">ylim_min</span><span class="p">,</span> <span class="n">ylim_max</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ylim</span><span class="p">)</span>
+        <span class="n">ylim_min</span><span class="p">,</span> <span class="n">ylim_max</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">())</span>
         
         <span class="c1"># get candidate tick labels</span>
         <span class="n">y_labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">get_yticks</span><span class="p">()</span>
@@ -1438,7 +1454,9 @@ table {
         <span class="k">return</span> <span class="n">figure</span><span class="p">,</span> <span class="n">canvas</span>
 
 
-    <span class="k">def</span> <span class="nf">set_border</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="n">Format</span><span class="o">.</span><span class="n">ALL</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">set_border</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">borders</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">borders</span> <span class="o">=</span> <span class="n">Format</span><span class="o">.</span><span class="n">ALL</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_borders</span> <span class="o">=</span> <span class="n">borders</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1456,13 +1474,9 @@ table {
 <span class="sd">                x-labels    t</span>
 <span class="sd">             padding-bottom</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="c1">#self.set_padding(0)</span>
-        <span class="c1"># self.set_border(Format.NONE|Format.BOTTOM|Format.LEFT)</span>
-        <span class="c1"># self.set_border(Format.ALL)#BOTTOM_LEFT)</span>
-        <span class="c1"># self.set_tick_position(Format.BOTTOM_LEFT)</span>
-
-        <span class="n">ylim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ylim</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ylim</span> <span class="o">=</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>
+        
+        <span class="n">ylim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">ylim</span><span class="p">))</span>
         
         <span class="c1"># GET FIGURE AND CANVAS</span>
         <span class="c1"># -----------------------------</span>
@@ -1534,8 +1548,9 @@ table {
         <span class="n">headers</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">footers</span> <span class="o">=</span> <span class="p">[]</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">headers</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_title</span><span class="o">.</span><span class="n">center</span><span class="p">(</span><span class="n">columns</span><span class="o">-</span><span class="mi">1</span><span class="p">)])</span>
         
-
         
         
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_borders</span> <span class="o">&amp;</span> <span class="n">Format</span><span class="o">.</span><span class="n">LEFT</span><span class="p">:</span>
@@ -1563,9 +1578,11 @@ table {
         
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_curves</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">footers</span><span class="p">)</span>
 
+        
+        
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">headers</span><span class="o">+</span><span class="n">footers</span><span class="p">:</span>
            <span class="n">item</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">w</span><span class="o">*</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
-
+        
         <span class="n">figure</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="n">lmargin</span> <span class="o">=</span> <span class="n">lmargin</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="n">rmargin</span> <span class="o">=</span> <span class="n">rmargin</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
@@ -1586,7 +1603,7 @@ table {
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">IS_PYTHON3</span><span class="p">:</span>
             <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">s</span>
+        <span class="k">return</span> <span class="n">s</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
     
 
     <span class="k">def</span> <span class="nf">_add_legends</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">figure</span><span class="p">):</span>
@@ -1620,11 +1637,8 @@ table {
                 <span class="n">pixels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">L</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lines</span><span class="p">),</span> <span class="n">C</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_columns</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
                 <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="o">=</span> <span class="n">mapped</span><span class="o">.</span><span class="n">T</span>
                 <span class="n">pixels</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="n">tmp</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">pixels</span><span class="p">,</span> <span class="n">BRAILLE_KERNEL</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)[::</span><span class="n">L</span><span class="p">,::</span><span class="n">C</span><span class="p">]</span>
                 
-                <span class="c1">#f = np.vectorize(lambda n,c: Ansi.format(to_braille(n), c))</span>
-                <span class="c1">#i,j=np.nonzero(tmp)</span>
-                <span class="c1">#canvas[i,j] = f(tmp[i,j], c)</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">block_multiply</span><span class="p">(</span><span class="n">pixels</span><span class="p">,</span> <span class="n">BRAILLE_KERNEL</span><span class="p">)</span>
                 
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">tmp</span><span class="p">)):</span>
                    <span class="n">canvas</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">to_braille</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]),</span> <span class="n">color</span><span class="p">)</span>
@@ -1648,19 +1662,39 @@ table {
                 <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="o">=</span> <span class="n">mapped</span><span class="o">.</span><span class="n">T</span>
                 <span class="n">canvas</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="s1">&#39;marker&#39;</span><span class="p">],</span> <span class="n">color</span><span class="p">)</span>
             
-            <span class="k">if</span> <span class="s1">&#39;percentile&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
-                <span class="n">xp</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">]</span>
-                <span class="n">yp</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ylim</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">percentile</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;percentile&#39;</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="n">xp</span> <span class="o">=</span> <span class="n">percentile</span>
+                <span class="n">llabel</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xtick_fmt</span><span class="o">%</span><span class="n">xp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">rlabel</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xtick_fmt</span><span class="o">%</span><span class="n">xp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                
+                <span class="n">yp</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">())</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
                 <span class="n">mapped</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">)</span>
                 
                 <span class="n">i</span> <span class="o">=</span> <span class="n">mapped</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
-                <span class="n">canvas</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="o">.</span><span class="n">min</span><span class="p">():</span><span class="n">i</span><span class="o">.</span><span class="n">max</span><span class="p">()]</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;━&#39;</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
-                <span class="n">canvas</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">mapped</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;╋&#39;</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+                <span class="c1"># canvas[0,i.min():i.max()] = Ansi.format(u&#39;━&#39;, color)</span>
+                <span class="c1"># canvas[0,mapped[:,0]] = Ansi.format(u&#39;╋&#39;, color)</span>
                 
                 <span class="n">s</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;╋&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="sa">u</span><span class="s1">&#39;━&#39;</span><span class="o">*</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">mapped</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
-                <span class="n">item</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">*</span><span class="s1">&#39; &#39;</span><span class="o">+</span> <span class="n">s</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+                <span class="n">s2</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">llabel</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">rlabel</span><span class="p">)</span>
+                <span class="n">item</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="n">i</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">llabel</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="s1">&#39; &#39;</span><span class="o">+</span> <span class="n">s2</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
                 <span class="n">footers</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">item</span><span class="p">])</span>
-                <span class="n">headers</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">item</span><span class="p">])</span>
+                <span class="c1">#item = Ansi.format(i.min()*&#39; &#39;+ s, color)</span>
+                <span class="c1">#footers.append([item])</span>
+                <span class="c1"># headers.append([item])</span>
+            
+            <span class="c1"># if &#39;percentile&#39; in ds:</span>
+            <span class="c1">#     xp = ds[&#39;percentile&#39;]</span>
+            <span class="c1">#     yp = min(self.get_ylim()) * np.ones_like(xp)</span>
+            <span class="c1">#     mapped,_ = self.transform(xp, yp)</span>
+                
+            <span class="c1">#     i = mapped[:,0]</span>
+            <span class="c1">#     # canvas[0,i.min():i.max()] = Ansi.format(u&#39;━&#39;, color)</span>
+            <span class="c1">#     # canvas[0,mapped[:,0]] = Ansi.format(u&#39;╋&#39;, color)</span>
+                
+            <span class="c1">#     s = u&#39;╋&#39;.join([&#39;&#39;] + [u&#39;━&#39;*d for d in np.diff(mapped[:,0])-1] + [&#39;&#39;])</span>
+            <span class="c1">#     item = Ansi.format(i.min()*&#39; &#39;+ s, color)</span>
+            <span class="c1">#     footers.append([item])</span>
+            <span class="c1">#     # headers.append([item])</span>
 
 
 
@@ -1668,9 +1702,13 @@ table {
         
         
     <span class="k">def</span> <span class="nf">set_xtick_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fmt</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_xtick_fmt</span> <span class="o">=</span> <span class="n">fmt</span>
     
     <span class="k">def</span> <span class="nf">set_ytick_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fmt</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ytick_fmt</span> <span class="o">=</span> <span class="n">fmt</span>
 
     <span class="k">def</span> <span class="nf">set_xticks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticks</span><span class="p">):</span>
@@ -1706,26 +1744,20 @@ table {
         <span class="k">return</span> <span class="n">pos</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
 
 
-    <span class="c1"># def __str__(self):</span>
-    <span class="c1">#     s = self.as_string()</span>
-    <span class="c1">#     if not IS_PYTHON3:</span>
-    <span class="c1">#         s = s.encode(&#39;utf-8&#39;)</span>
-    <span class="c1">#     return s</span>
-
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
     
-    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">print</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="c1"># def show(self):</span>
+    <span class="c1">#     print(self)</span>
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fig</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span>
+    <span class="c1"># def __enter__(self):</span>
+    <span class="c1">#     return self</span>
 
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="c1"># def __exit__(self, *args):</span>
+    <span class="c1">#     self.close()</span>
     
     
 </pre></div>
@@ -1882,15 +1914,13 @@ table {
   <div id="source-tplot.tplot.TPlot" class="source">
     <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">TPlot</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">lines</span><span class="p">,</span>
-                <span class="c1">#logx=False, logy=False,</span>
-                <span class="n">borders</span><span class="o">=</span><span class="n">Format</span><span class="o">.</span><span class="n">BOTTOM_LEFT</span><span class="p">,</span>
-                <span class="n">tick_position</span><span class="o">=</span><span class="n">Format</span><span class="o">.</span><span class="n">BOTTOM_LEFT</span><span class="p">,</span>
-                <span class="n">xtick_format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span>
-                <span class="n">ytick_format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">tick_position</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">xtick_format</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">ytick_format</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">borders</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                 <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,)):</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">columns</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span> <span class="o">=</span> <span class="p">[]</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
@@ -1901,19 +1931,36 @@ table {
         
         <span class="bp">self</span><span class="o">.</span><span class="n">_xticks</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_grid</span> <span class="o">=</span> <span class="bp">False</span>
-        
-        <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span>  <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="n">Ansi</span><span class="o">.</span><span class="n">as_list</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_markers</span> <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="s1">&#39;ox+.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">get_output_size</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="o">*</span><span class="n">size</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">set_tick_position</span><span class="p">(</span><span class="n">tick_position</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_xtick_format</span><span class="p">(</span><span class="n">xtick_format</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_ytick_format</span><span class="p">(</span><span class="n">ytick_format</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_padding</span><span class="p">(</span><span class="o">*</span><span class="n">padding</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_border</span><span class="p">(</span><span class="n">borders</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">set_title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="o">=</span> <span class="n">title</span>
     
+    <span class="k">def</span> <span class="nf">set_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="p">,</span> <span class="n">columns</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">columns</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span>  <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="n">Ansi</span><span class="o">.</span><span class="n">available_colors</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_markers</span> <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;ox+.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+        
     <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+        
 
     <span class="k">def</span> <span class="nf">set_yscale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">scale</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="s1">&#39;log&#39;</span><span class="p">):</span>
@@ -1929,6 +1976,8 @@ table {
     
 
     <span class="k">def</span> <span class="nf">set_tick_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">position</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">position</span> <span class="o">=</span> <span class="n">Format</span><span class="o">.</span><span class="n">BOTTOM_LEFT</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tick_position</span> <span class="o">=</span> <span class="n">position</span>
 
 
@@ -1945,11 +1994,8 @@ table {
 <span class="sd">        * two values - `left = right = padding[0]`, `top = bottom = padding[1]`</span>
 <span class="sd">        * fours values - `left,top,right,bottom = padding`</span>
 <span class="sd">        </span>
-<span class="sd">        ```python</span>
-<span class="sd">        print(ola)</span>
-<span class="sd">        ```</span>
-<span class="sd">        </span>
 <span class="sd">        &#39;&#39;&#39;</span>
+        
         <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">padding</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_padding</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="n">padding</span>
@@ -2021,6 +2067,7 @@ table {
 
         <span class="k">return</span> <span class="n">dataset</span>
 
+
     <span class="k">def</span> <span class="nf">hist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
             <span class="nb">range</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">add_percentile</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
             <span class="n">marker</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;█&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
@@ -2033,27 +2080,24 @@ table {
         <span class="k">if</span> <span class="n">add_percentile</span><span class="p">:</span>
             <span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">75</span><span class="p">])</span>
         
-        <span class="c1"># self._datasets.append(dataset)</span>
-        <span class="c1"># self._ax.bar(x, hist, label=label)</span>
-        <span class="c1"># self.set_xticks(bin_edges)</span>
         <span class="k">return</span> <span class="n">dataset</span>
 
     <span class="k">def</span> <span class="nf">show_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">show</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_grid</span> <span class="o">=</span> <span class="n">show</span>
     
-    <span class="k">def</span> <span class="nf">_set_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xlim</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">set_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xlim</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">_get_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">get_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
-    <span class="n">xlim</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_xlim</span><span class="p">,</span> <span class="n">_set_xlim</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_set_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ylim</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">set_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ylim</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>        
-    <span class="k">def</span> <span class="nf">_get_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">get_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
-    <span class="n">ylim</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_ylim</span><span class="p">,</span> <span class="n">_set_ylim</span><span class="p">)</span>
-
+    
 
     <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sub_sampling</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
 
@@ -2082,7 +2126,7 @@ table {
         <span class="c1"># keep the unique pairs</span>
         <span class="k">if</span> <span class="n">unique</span> <span class="ow">and</span> <span class="n">mapped</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
             <span class="n">mapped</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">mapped</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
+        
         <span class="k">return</span> <span class="n">mapped</span><span class="p">,</span> <span class="n">idx</span>
     
 
@@ -2090,7 +2134,7 @@ table {
         
         <span class="n">pl</span><span class="p">,</span><span class="n">pt</span><span class="p">,</span><span class="n">pr</span><span class="p">,</span><span class="n">pb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_padding</span>
 
-        <span class="n">ylim_min</span><span class="p">,</span> <span class="n">ylim_max</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ylim</span><span class="p">)</span>
+        <span class="n">ylim_min</span><span class="p">,</span> <span class="n">ylim_max</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">())</span>
         
         <span class="c1"># get candidate tick labels</span>
         <span class="n">y_labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">get_yticks</span><span class="p">()</span>
@@ -2153,7 +2197,9 @@ table {
         <span class="k">return</span> <span class="n">figure</span><span class="p">,</span> <span class="n">canvas</span>
 
 
-    <span class="k">def</span> <span class="nf">set_border</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="n">Format</span><span class="o">.</span><span class="n">ALL</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">set_border</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">borders</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">borders</span> <span class="o">=</span> <span class="n">Format</span><span class="o">.</span><span class="n">ALL</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_borders</span> <span class="o">=</span> <span class="n">borders</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -2171,13 +2217,9 @@ table {
 <span class="sd">                x-labels    t</span>
 <span class="sd">             padding-bottom</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="c1">#self.set_padding(0)</span>
-        <span class="c1"># self.set_border(Format.NONE|Format.BOTTOM|Format.LEFT)</span>
-        <span class="c1"># self.set_border(Format.ALL)#BOTTOM_LEFT)</span>
-        <span class="c1"># self.set_tick_position(Format.BOTTOM_LEFT)</span>
-
-        <span class="n">ylim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ylim</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ylim</span> <span class="o">=</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>
+        
+        <span class="n">ylim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">ylim</span><span class="p">))</span>
         
         <span class="c1"># GET FIGURE AND CANVAS</span>
         <span class="c1"># -----------------------------</span>
@@ -2249,8 +2291,9 @@ table {
         <span class="n">headers</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">footers</span> <span class="o">=</span> <span class="p">[]</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">headers</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_title</span><span class="o">.</span><span class="n">center</span><span class="p">(</span><span class="n">columns</span><span class="o">-</span><span class="mi">1</span><span class="p">)])</span>
         
-
         
         
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_borders</span> <span class="o">&amp;</span> <span class="n">Format</span><span class="o">.</span><span class="n">LEFT</span><span class="p">:</span>
@@ -2278,9 +2321,11 @@ table {
         
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_curves</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">footers</span><span class="p">)</span>
 
+        
+        
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">headers</span><span class="o">+</span><span class="n">footers</span><span class="p">:</span>
            <span class="n">item</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">w</span><span class="o">*</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
-
+        
         <span class="n">figure</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="n">lmargin</span> <span class="o">=</span> <span class="n">lmargin</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="n">rmargin</span> <span class="o">=</span> <span class="n">rmargin</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
@@ -2301,7 +2346,7 @@ table {
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">IS_PYTHON3</span><span class="p">:</span>
             <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">s</span>
+        <span class="k">return</span> <span class="n">s</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
     
 
     <span class="k">def</span> <span class="nf">_add_legends</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">figure</span><span class="p">):</span>
@@ -2335,11 +2380,8 @@ table {
                 <span class="n">pixels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">L</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lines</span><span class="p">),</span> <span class="n">C</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_columns</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
                 <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="o">=</span> <span class="n">mapped</span><span class="o">.</span><span class="n">T</span>
                 <span class="n">pixels</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="n">tmp</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">pixels</span><span class="p">,</span> <span class="n">BRAILLE_KERNEL</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)[::</span><span class="n">L</span><span class="p">,::</span><span class="n">C</span><span class="p">]</span>
                 
-                <span class="c1">#f = np.vectorize(lambda n,c: Ansi.format(to_braille(n), c))</span>
-                <span class="c1">#i,j=np.nonzero(tmp)</span>
-                <span class="c1">#canvas[i,j] = f(tmp[i,j], c)</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">block_multiply</span><span class="p">(</span><span class="n">pixels</span><span class="p">,</span> <span class="n">BRAILLE_KERNEL</span><span class="p">)</span>
                 
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">tmp</span><span class="p">)):</span>
                    <span class="n">canvas</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">to_braille</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]),</span> <span class="n">color</span><span class="p">)</span>
@@ -2363,19 +2405,39 @@ table {
                 <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="o">=</span> <span class="n">mapped</span><span class="o">.</span><span class="n">T</span>
                 <span class="n">canvas</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="s1">&#39;marker&#39;</span><span class="p">],</span> <span class="n">color</span><span class="p">)</span>
             
-            <span class="k">if</span> <span class="s1">&#39;percentile&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
-                <span class="n">xp</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">]</span>
-                <span class="n">yp</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ylim</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">percentile</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;percentile&#39;</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="n">xp</span> <span class="o">=</span> <span class="n">percentile</span>
+                <span class="n">llabel</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xtick_fmt</span><span class="o">%</span><span class="n">xp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">rlabel</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xtick_fmt</span><span class="o">%</span><span class="n">xp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                
+                <span class="n">yp</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">())</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">xp</span><span class="p">)</span>
                 <span class="n">mapped</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">)</span>
                 
                 <span class="n">i</span> <span class="o">=</span> <span class="n">mapped</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
-                <span class="n">canvas</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="o">.</span><span class="n">min</span><span class="p">():</span><span class="n">i</span><span class="o">.</span><span class="n">max</span><span class="p">()]</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;━&#39;</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
-                <span class="n">canvas</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">mapped</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;╋&#39;</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+                <span class="c1"># canvas[0,i.min():i.max()] = Ansi.format(u&#39;━&#39;, color)</span>
+                <span class="c1"># canvas[0,mapped[:,0]] = Ansi.format(u&#39;╋&#39;, color)</span>
                 
                 <span class="n">s</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;╋&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="sa">u</span><span class="s1">&#39;━&#39;</span><span class="o">*</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">mapped</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
-                <span class="n">item</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">*</span><span class="s1">&#39; &#39;</span><span class="o">+</span> <span class="n">s</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+                <span class="n">s2</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">llabel</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">rlabel</span><span class="p">)</span>
+                <span class="n">item</span> <span class="o">=</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="n">i</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">llabel</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="s1">&#39; &#39;</span><span class="o">+</span> <span class="n">s2</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
                 <span class="n">footers</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">item</span><span class="p">])</span>
-                <span class="n">headers</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">item</span><span class="p">])</span>
+                <span class="c1">#item = Ansi.format(i.min()*&#39; &#39;+ s, color)</span>
+                <span class="c1">#footers.append([item])</span>
+                <span class="c1"># headers.append([item])</span>
+            
+            <span class="c1"># if &#39;percentile&#39; in ds:</span>
+            <span class="c1">#     xp = ds[&#39;percentile&#39;]</span>
+            <span class="c1">#     yp = min(self.get_ylim()) * np.ones_like(xp)</span>
+            <span class="c1">#     mapped,_ = self.transform(xp, yp)</span>
+                
+            <span class="c1">#     i = mapped[:,0]</span>
+            <span class="c1">#     # canvas[0,i.min():i.max()] = Ansi.format(u&#39;━&#39;, color)</span>
+            <span class="c1">#     # canvas[0,mapped[:,0]] = Ansi.format(u&#39;╋&#39;, color)</span>
+                
+            <span class="c1">#     s = u&#39;╋&#39;.join([&#39;&#39;] + [u&#39;━&#39;*d for d in np.diff(mapped[:,0])-1] + [&#39;&#39;])</span>
+            <span class="c1">#     item = Ansi.format(i.min()*&#39; &#39;+ s, color)</span>
+            <span class="c1">#     footers.append([item])</span>
+            <span class="c1">#     # headers.append([item])</span>
 
 
 
@@ -2383,9 +2445,13 @@ table {
         
         
     <span class="k">def</span> <span class="nf">set_xtick_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fmt</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_xtick_fmt</span> <span class="o">=</span> <span class="n">fmt</span>
     
     <span class="k">def</span> <span class="nf">set_ytick_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">fmt</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ytick_fmt</span> <span class="o">=</span> <span class="n">fmt</span>
 
     <span class="k">def</span> <span class="nf">set_xticks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticks</span><span class="p">):</span>
@@ -2421,26 +2487,14 @@ table {
         <span class="k">return</span> <span class="n">pos</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
 
 
-    <span class="c1"># def __str__(self):</span>
-    <span class="c1">#     s = self.as_string()</span>
-    <span class="c1">#     if not IS_PYTHON3:</span>
-    <span class="c1">#         s = s.encode(&#39;utf-8&#39;)</span>
-    <span class="c1">#     return s</span>
-
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
     
-    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">print</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+    <span class="c1"># def show(self):</span>
+    <span class="c1">#     print(self)</span>
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fig</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span>
-
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 
   </div>
@@ -2453,32 +2507,11 @@ table {
           <li><a href="#tplot.tplot.TPlot">TPlot</a></li>
           <li>builtins.object</li>
           </ul>
-          <h3>Class variables</h3>
-            <div class="item">
-            <p id="tplot.tplot.TPlot.xlim" class="name">var <span class="ident">xlim</span></p>
-            
-
-            
-  
-  <div class="source_cont">
-</div>
-
-            </div>
-            <div class="item">
-            <p id="tplot.tplot.TPlot.ylim" class="name">var <span class="ident">ylim</span></p>
-            
-
-            
-  
-  <div class="source_cont">
-</div>
-
-            </div>
           <h3>Static methods</h3>
             
   <div class="item">
     <div class="name def" id="tplot.tplot.TPlot.__init__">
-    <p>def <span class="ident">__init__</span>(</p><p>self, columns, lines, borders=9, tick_position=9, xtick_format=&#39;%r&#39;, ytick_format=&#39;%r&#39;, padding=(0,))</p>
+    <p>def <span class="ident">__init__</span>(</p><p>self, size=None, tick_position=None, xtick_format=None, ytick_format=None, borders=None, padding=(0,))</p>
     </div>
     
 
@@ -2488,14 +2521,12 @@ table {
   <div class="source_cont">
   <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.__init__', this);">Show source &equiv;</a></p>
   <div id="source-tplot.tplot.TPlot.__init__" class="source">
-    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">lines</span><span class="p">,</span>
-            <span class="c1">#logx=False, logy=False,</span>
-            <span class="n">borders</span><span class="o">=</span><span class="n">Format</span><span class="o">.</span><span class="n">BOTTOM_LEFT</span><span class="p">,</span>
-            <span class="n">tick_position</span><span class="o">=</span><span class="n">Format</span><span class="o">.</span><span class="n">BOTTOM_LEFT</span><span class="p">,</span>
-            <span class="n">xtick_format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span>
-            <span class="n">ytick_format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span>
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+            <span class="n">tick_position</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+            <span class="n">xtick_format</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+            <span class="n">ytick_format</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+            <span class="n">borders</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
             <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,)):</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">columns</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span> <span class="o">=</span> <span class="p">[]</span>
     
     <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
@@ -2505,14 +2536,17 @@ table {
     
     <span class="bp">self</span><span class="o">.</span><span class="n">_xticks</span> <span class="o">=</span> <span class="bp">None</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_grid</span> <span class="o">=</span> <span class="bp">False</span>
-    
-    <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span>  <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="n">Ansi</span><span class="o">.</span><span class="n">as_list</span><span class="p">())</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_markers</span> <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="s1">&#39;ox+.&#39;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="n">get_output_size</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="o">*</span><span class="n">size</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">set_tick_position</span><span class="p">(</span><span class="n">tick_position</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">set_xtick_format</span><span class="p">(</span><span class="n">xtick_format</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">set_ytick_format</span><span class="p">(</span><span class="n">ytick_format</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">set_padding</span><span class="p">(</span><span class="o">*</span><span class="n">padding</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">set_border</span><span class="p">(</span><span class="n">borders</span><span class="p">)</span>
+    
+    <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
 </pre></div>
 
   </div>
@@ -2564,8 +2598,9 @@ table {
   <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.clear', this);">Show source &equiv;</a></p>
   <div id="source-tplot.tplot.TPlot.clear" class="source">
     <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="k">return</span> <span class="bp">self</span>
 </pre></div>
 
   </div>
@@ -2617,6 +2652,27 @@ table {
   
             
   <div class="item">
+    <div class="name def" id="tplot.tplot.TPlot.get_xlim">
+    <p>def <span class="ident">get_xlim</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.get_xlim', this);">Show source &equiv;</a></p>
+  <div id="source-tplot.tplot.TPlot.get_xlim" class="source">
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+</pre></div>
+
+  </div>
+</div>
+
+  </div>
+  
+            
+  <div class="item">
     <div class="name def" id="tplot.tplot.TPlot.get_xticks">
     <p>def <span class="ident">get_xticks</span>(</p><p>self)</p>
     </div>
@@ -2639,6 +2695,27 @@ table {
     
     <span class="c1"># return list(zip(pos[:,0], ticks[idx]))</span>
     <span class="k">return</span> <span class="n">pos</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+</pre></div>
+
+  </div>
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="tplot.tplot.TPlot.get_ylim">
+    <p>def <span class="ident">get_ylim</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.get_ylim', this);">Show source &equiv;</a></p>
+  <div id="source-tplot.tplot.TPlot.get_ylim" class="source">
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
 </pre></div>
 
   </div>
@@ -2701,9 +2778,6 @@ table {
     <span class="k">if</span> <span class="n">add_percentile</span><span class="p">:</span>
         <span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;percentile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">75</span><span class="p">])</span>
     
-    <span class="c1"># self._datasets.append(dataset)</span>
-    <span class="c1"># self._ax.bar(x, hist, label=label)</span>
-    <span class="c1"># self.set_xticks(bin_edges)</span>
     <span class="k">return</span> <span class="n">dataset</span>
 </pre></div>
 
@@ -2754,8 +2828,31 @@ table {
   
             
   <div class="item">
+    <div class="name def" id="tplot.tplot.TPlot.reset">
+    <p>def <span class="ident">reset</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.reset', this);">Show source &equiv;</a></p>
+  <div id="source-tplot.tplot.TPlot.reset" class="source">
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span>  <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="n">Ansi</span><span class="o">.</span><span class="n">available_colors</span><span class="p">())</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_markers</span> <span class="o">=</span> <span class="n">cycle</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;ox+.&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span>
+</pre></div>
+
+  </div>
+</div>
+
+  </div>
+  
+            
+  <div class="item">
     <div class="name def" id="tplot.tplot.TPlot.set_border">
-    <p>def <span class="ident">set_border</span>(</p><p>self, borders=15)</p>
+    <p>def <span class="ident">set_border</span>(</p><p>self, borders=None)</p>
     </div>
     
 
@@ -2764,7 +2861,9 @@ table {
   <div class="source_cont">
   <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.set_border', this);">Show source &equiv;</a></p>
   <div id="source-tplot.tplot.TPlot.set_border" class="source">
-    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_border</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="n">Format</span><span class="o">.</span><span class="n">ALL</span><span class="p">):</span>
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_border</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">borders</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">borders</span> <span class="o">=</span> <span class="n">Format</span><span class="o">.</span><span class="n">ALL</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_borders</span> <span class="o">=</span> <span class="n">borders</span>
 </pre></div>
 
@@ -2790,9 +2889,7 @@ of values passed to the method:</p>
 <li>single value - <code>top = bottom = left = right = padding</code></li>
 <li>two values - <code>left = right = padding[0]</code>, <code>top = bottom = padding[1]</code></li>
 <li>fours values - <code>left,top,right,bottom = padding</code></li>
-</ul>
-<p><code>python
-print(ola)</code></p></div>
+</ul></div>
   <div class="source_cont">
   <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.set_padding', this);">Show source &equiv;</a></p>
   <div id="source-tplot.tplot.TPlot.set_padding" class="source">
@@ -2807,11 +2904,8 @@ print(ola)</code></p></div>
 <span class="sd">    * two values - `left = right = padding[0]`, `top = bottom = padding[1]`</span>
 <span class="sd">    * fours values - `left,top,right,bottom = padding`</span>
 <span class="sd">    </span>
-<span class="sd">    ```python</span>
-<span class="sd">    print(ola)</span>
-<span class="sd">    ```</span>
-<span class="sd">    </span>
 <span class="sd">    &#39;&#39;&#39;</span>
+    
     <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">padding</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_padding</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="n">padding</span>
@@ -2821,6 +2915,27 @@ print(ola)</code></p></div>
         <span class="bp">self</span><span class="o">.</span><span class="n">_padding</span> <span class="o">=</span> <span class="n">padding</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;invalid number of arguments: expected 1, 2 or 4 but found </span><span class="si">%d</span><span class="s1">&#39;</span><span class="o">%</span><span class="n">count</span><span class="p">)</span>
+</pre></div>
+
+  </div>
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="tplot.tplot.TPlot.set_size">
+    <p>def <span class="ident">set_size</span>(</p><p>self, lines, columns)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.set_size', this);">Show source &equiv;</a></p>
+  <div id="source-tplot.tplot.TPlot.set_size" class="source">
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="p">,</span> <span class="n">columns</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">columns</span><span class="p">)</span>
 </pre></div>
 
   </div>
@@ -2841,7 +2956,51 @@ print(ola)</code></p></div>
   <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.set_tick_position', this);">Show source &equiv;</a></p>
   <div id="source-tplot.tplot.TPlot.set_tick_position" class="source">
     <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_tick_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">position</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="n">Format</span><span class="o">.</span><span class="n">BOTTOM_LEFT</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_tick_position</span> <span class="o">=</span> <span class="n">position</span>
+</pre></div>
+
+  </div>
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="tplot.tplot.TPlot.set_title">
+    <p>def <span class="ident">set_title</span>(</p><p>self, title)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.set_title', this);">Show source &equiv;</a></p>
+  <div id="source-tplot.tplot.TPlot.set_title" class="source">
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_title</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_title</span> <span class="o">=</span> <span class="n">title</span>
+</pre></div>
+
+  </div>
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="tplot.tplot.TPlot.set_xlim">
+    <p>def <span class="ident">set_xlim</span>(</p><p>self, xlim)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.set_xlim', this);">Show source &equiv;</a></p>
+  <div id="source-tplot.tplot.TPlot.set_xlim" class="source">
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xlim</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
 </pre></div>
 
   </div>
@@ -2886,6 +3045,8 @@ print(ola)</code></p></div>
   <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.set_xtick_format', this);">Show source &equiv;</a></p>
   <div id="source-tplot.tplot.TPlot.set_xtick_format" class="source">
     <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_xtick_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">fmt</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_xtick_fmt</span> <span class="o">=</span> <span class="n">fmt</span>
 </pre></div>
 
@@ -2908,6 +3069,27 @@ print(ola)</code></p></div>
   <div id="source-tplot.tplot.TPlot.set_xticks" class="source">
     <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_xticks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticks</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_xticks</span> <span class="o">=</span> <span class="n">ticks</span>
+</pre></div>
+
+  </div>
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="tplot.tplot.TPlot.set_ylim">
+    <p>def <span class="ident">set_ylim</span>(</p><p>self, ylim)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.set_ylim', this);">Show source &equiv;</a></p>
+  <div id="source-tplot.tplot.TPlot.set_ylim" class="source">
+    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ylim</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>        
 </pre></div>
 
   </div>
@@ -2952,28 +3134,9 @@ print(ola)</code></p></div>
   <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.set_ytick_format', this);">Show source &equiv;</a></p>
   <div id="source-tplot.tplot.TPlot.set_ytick_format" class="source">
     <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_ytick_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">fmt</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_ytick_fmt</span> <span class="o">=</span> <span class="n">fmt</span>
-</pre></div>
-
-  </div>
-</div>
-
-  </div>
-  
-            
-  <div class="item">
-    <div class="name def" id="tplot.tplot.TPlot.show">
-    <p>def <span class="ident">show</span>(</p><p>self)</p>
-    </div>
-    
-
-    
-  
-  <div class="source_cont">
-  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.tplot.TPlot.show', this);">Show source &equiv;</a></p>
-  <div id="source-tplot.tplot.TPlot.show" class="source">
-    <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">print</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </pre></div>
 
   </div>
@@ -3039,6 +3202,7 @@ print(ola)</code></p></div>
     <span class="c1"># keep the unique pairs</span>
     <span class="k">if</span> <span class="n">unique</span> <span class="ow">and</span> <span class="n">mapped</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
         <span class="n">mapped</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">mapped</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    
     <span class="k">return</span> <span class="n">mapped</span><span class="p">,</span> <span class="n">idx</span>
 </pre></div>
 
@@ -3047,27 +3211,6 @@ print(ola)</code></p></div>
 
   </div>
   
-          <h3>Instance variables</h3>
-            <div class="item">
-            <p id="tplot.tplot.TPlot.xlim" class="name">var <span class="ident">xlim</span></p>
-            
-
-            
-  
-  <div class="source_cont">
-</div>
-
-            </div>
-            <div class="item">
-            <p id="tplot.tplot.TPlot.ylim" class="name">var <span class="ident">ylim</span></p>
-            
-
-            
-  
-  <div class="source_cont">
-</div>
-
-            </div>
       </div>
       </div>
 

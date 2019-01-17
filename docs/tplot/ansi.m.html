@@ -663,7 +663,6 @@ table {
 
   .codehilite {
     margin: 0 30px 10px 30px;
-    font-size: 0.75em;
   }
 
     .codehilite pre {
@@ -1050,7 +1049,7 @@ table {
         
           
   <ul>
-    <li class="mono"><a href="#tplot.ansi.Ansi.as_list">as_list</a></li>
+    <li class="mono"><a href="#tplot.ansi.Ansi.available_colors">available_colors</a></li>
     <li class="mono"><a href="#tplot.ansi.Ansi.disable">disable</a></li>
     <li class="mono"><a href="#tplot.ansi.Ansi.enable">enable</a></li>
     <li class="mono"><a href="#tplot.ansi.Ansi.format">format</a></li>
@@ -1081,6 +1080,19 @@ table {
     <div class="codehilite"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Ansi&#39;</span><span class="p">]</span>
+
+<span class="c1"># def f(a, s, **d):</span>
+<span class="c1">#     if not d:</span>
+<span class="c1">#         return &#39;&lt;h1 style=&quot;{}&quot;&gt;{}&lt;/h1&gt;&#39;.format(s,a)</span>
+<span class="c1">#     k,v = d.popitem()</span>
+<span class="c1">#     return f(a, &#39;{} {}:{};&#39;.format(s,k,v), **d)</span>
+<span class="c1"># def enable_html():</span>
+<span class="c1">#     Ansi._COLORS = {</span>
+<span class="c1">#         &#39;COLOR1&#39;: &#39;color=red&#39;,</span>
+<span class="c1">#         &#39;COLOR2&#39;: &#39;color=green&#39;,</span>
+<span class="c1">#         &#39;COLOR3&#39;: &#39;color=blue&#39;,</span>
+<span class="c1">#     }</span>
+
 
 <span class="k">class</span> <span class="nc">Ansi</span><span class="p">:</span>
 
@@ -1115,15 +1127,17 @@ table {
         
         <span class="c1"># light gray</span>
         <span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span><span class="p">[</span><span class="s1">&#39;GRID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get</span><span class="p">(</span><span class="s1">&#39;TPLOT_GRID&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[2m&#39;</span><span class="p">)</span>
-        
+    
+
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">Ansi</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
     
+
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">as_list</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">available_colors</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">Ansi</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
         <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
@@ -1131,13 +1145,16 @@ table {
                     <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;COLOR&#39;</span><span class="p">)]</span>
         <span class="k">return</span> <span class="n">colors</span>
     
+
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">disable</span><span class="p">():</span>
         <span class="n">Ansi</span><span class="o">.</span><span class="n">_ENABLED</span> <span class="o">=</span> <span class="bp">False</span>
     
+
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">enable</span><span class="p">():</span>
         <span class="n">Ansi</span><span class="o">.</span><span class="n">_ENABLED</span> <span class="o">=</span> <span class="bp">True</span>
+    
     
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="o">*</span><span class="n">prefixes</span><span class="p">):</span>
@@ -1195,15 +1212,17 @@ table {
         
         <span class="c1"># light gray</span>
         <span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span><span class="p">[</span><span class="s1">&#39;GRID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get</span><span class="p">(</span><span class="s1">&#39;TPLOT_GRID&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[2m&#39;</span><span class="p">)</span>
-        
+    
+
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">Ansi</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
     
+
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">as_list</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">available_colors</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">Ansi</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
         <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
@@ -1211,13 +1230,16 @@ table {
                     <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;COLOR&#39;</span><span class="p">)]</span>
         <span class="k">return</span> <span class="n">colors</span>
     
+
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">disable</span><span class="p">():</span>
         <span class="n">Ansi</span><span class="o">.</span><span class="n">_ENABLED</span> <span class="o">=</span> <span class="bp">False</span>
     
+
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">enable</span><span class="p">():</span>
         <span class="n">Ansi</span><span class="o">.</span><span class="n">_ENABLED</span> <span class="o">=</span> <span class="bp">True</span>
+    
     
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="o">*</span><span class="n">prefixes</span><span class="p">):</span>
@@ -1280,18 +1302,18 @@ table {
           <h3>Static methods</h3>
             
   <div class="item">
-    <div class="name def" id="tplot.ansi.Ansi.as_list">
-    <p>def <span class="ident">as_list</span>(</p><p>)</p>
+    <div class="name def" id="tplot.ansi.Ansi.available_colors">
+    <p>def <span class="ident">available_colors</span>(</p><p>)</p>
     </div>
     
 
     
   
   <div class="source_cont">
-  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.ansi.Ansi.as_list', this);">Show source &equiv;</a></p>
-  <div id="source-tplot.ansi.Ansi.as_list" class="source">
+  <p class="source_link"><a href="javascript:void(0);" onclick="toggle('source-tplot.ansi.Ansi.available_colors', this);">Show source &equiv;</a></p>
+  <div id="source-tplot.ansi.Ansi.available_colors" class="source">
     <div class="codehilite"><pre><span></span><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">as_list</span><span class="p">():</span>
+<span class="k">def</span> <span class="nf">available_colors</span><span class="p">():</span>
     <span class="k">if</span> <span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
         <span class="n">Ansi</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
     <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="n">Ansi</span><span class="o">.</span><span class="n">_COLORS</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>

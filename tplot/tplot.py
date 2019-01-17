@@ -559,8 +559,11 @@ class TPlot(object):
                 i,j = mapped.T
                 canvas[j,i] = Ansi.format(ds['marker'], color)
             
-            if 'percentile' in ds:
-                xp = ds['percentile']
+            for percentile in ds.get('percentile', []):
+                xp = percentile
+                llabel = (self._xtick_fmt%xp[0]).strip()
+                rlabel = (self._xtick_fmt%xp[-1]).strip()
+                
                 yp = min(self.get_ylim()) * np.ones_like(xp)
                 mapped,_ = self.transform(xp, yp)
                 
@@ -569,9 +572,26 @@ class TPlot(object):
                 # canvas[0,mapped[:,0]] = Ansi.format(u'╋', color)
                 
                 s = u'╋'.join([''] + [u'━'*d for d in np.diff(mapped[:,0])-1] + [''])
-                item = Ansi.format(i.min()*' '+ s, color)
+                s2 = '%s %s %s'%(llabel,s,rlabel)
+                item = Ansi.format((i.min()-len(llabel)-1)*' '+ s2, color)
                 footers.append([item])
+                #item = Ansi.format(i.min()*' '+ s, color)
+                #footers.append([item])
                 # headers.append([item])
+            
+            # if 'percentile' in ds:
+            #     xp = ds['percentile']
+            #     yp = min(self.get_ylim()) * np.ones_like(xp)
+            #     mapped,_ = self.transform(xp, yp)
+                
+            #     i = mapped[:,0]
+            #     # canvas[0,i.min():i.max()] = Ansi.format(u'━', color)
+            #     # canvas[0,mapped[:,0]] = Ansi.format(u'╋', color)
+                
+            #     s = u'╋'.join([''] + [u'━'*d for d in np.diff(mapped[:,0])-1] + [''])
+            #     item = Ansi.format(i.min()*' '+ s, color)
+            #     footers.append([item])
+            #     # headers.append([item])
 
 
 

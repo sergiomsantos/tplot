@@ -90,10 +90,12 @@ def main():
         help='show grid')
     
     choices=[k for k in vars(Format).keys() if not k.startswith('_')]
-    group.add_argument('--border', choices=choices, default='BOTTOM_LEFT')
-    group.add_argument('--labels', choices=choices, default='BOTTOM_LEFT')
+    group.add_argument('--border', choices=choices, type=str.upper, default='BOTTOM_LEFT')
+    group.add_argument('--labels', choices=choices, type=str.upper, default='BOTTOM_LEFT')
     group.add_argument('--x-fmt', type=str, default='%r')
     group.add_argument('--y-fmt', type=str, default='%r')
+
+    group.add_argument('--title', type=str, default=None)
 
     # parser: output configuration
     # ------------------------------------------- 
@@ -147,6 +149,7 @@ def main():
     plot.set_border(getattr(Format, args.border))
     plot.set_xtick_format(args.x_fmt)
     plot.set_ytick_format(args.y_fmt)
+    plot.set_title(args.title)
 
     if args.no_color:
         Ansi.disable()
