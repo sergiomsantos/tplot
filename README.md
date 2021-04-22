@@ -183,7 +183,7 @@ $ seq 1 100 | tplot -c 0 'simple sequence'
 
 ### STDIN as data source
 
-Feed data into `tplot` directly using a pipe:
+Feed data into `tplot` directly through standard input (stdin):
 
 ```console
 $ tplot -f - -xy 0 1 'first fibonacci numbers'
